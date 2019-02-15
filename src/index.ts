@@ -3,6 +3,22 @@ import message from "./message";
 
 console.log(message);
 
+// Placeholder Graphics from https://openclipart.org/user-detail/akiross
+// TODO: Use a Tileset
+// Get graphics which look even better.
+const whitePawnFile: string = require("../assets/pawn-w.png");
+const whiteRockFile: string = require("../assets/rock-w.png");
+const whiteKnightFile: string = require("../assets/knight-w.png");
+const whiteBishopFile: string = require("../assets/bishop-w.png");
+const whiteQueenFile: string = require("../assets/queen-w.png");
+const whiteKingFile: string = require("../assets/king-w.png");
+const blackPawnFile: string = require("../assets/pawn-b.png");
+const blackRockFile: string = require("../assets/rock-b.png");
+const blackKnightFile: string = require("../assets/knight-b.png");
+const blackBishopFile: string = require("../assets/bishop-b.png");
+const blackQueenFile: string = require("../assets/queen-b.png");
+const blackKingFile: string = require("../assets/king-b.png");
+
 const outputContainer = document.getElementById("output");
 if (outputContainer) {
   outputContainer.innerHTML = "";
@@ -61,6 +77,8 @@ class Tile extends PIXI.Graphics {
 
     this.on("click", () => board.onClick(this.tilePosition));
     this.interactive = true;
+    this.interactiveChildren = false;
+    this.hitArea = new PIXI.Rectangle(0, 0, 100, 100);
   }
   determineTint() {
     if (!this.highlight) {
@@ -132,8 +150,85 @@ class Board extends PIXI.Container {
   }
 }
 
+enum PieceType {
+  pawn,
+  rock,
+  knight,
+  bishop,
+  queen,
+  king
+}
+enum PlayerColor {
+  white,
+  black
+}
+
+function loadPieceSprite(piece: PieceType, color: PlayerColor): PIXI.Sprite {
+  if (color == PlayerColor.white) {
+    switch (piece) {
+      case PieceType.pawn:
+        return PIXI.Sprite.fromImage(whitePawnFile, undefined, 1);
+      case PieceType.rock:
+        return PIXI.Sprite.fromImage(whiteRockFile, undefined, 1);
+      case PieceType.knight:
+        return PIXI.Sprite.fromImage(whiteKnightFile, undefined, 1);
+      case PieceType.bishop:
+        return PIXI.Sprite.fromImage(whiteBishopFile, undefined, 1);
+      case PieceType.queen:
+        return PIXI.Sprite.fromImage(whiteQueenFile, undefined, 1);
+      case PieceType.king:
+        return PIXI.Sprite.fromImage(whiteKingFile, undefined, 1);
+      default:
+        return piece; // Here piece is of type never, so we may return it as a Pixi.Sprite
+    }
+  } else {
+    switch (piece) {
+      case PieceType.pawn:
+        return PIXI.Sprite.fromImage(blackPawnFile, undefined, 1);
+      case PieceType.rock:
+        return PIXI.Sprite.fromImage(blackRockFile, undefined, 1);
+      case PieceType.knight:
+        return PIXI.Sprite.fromImage(blackKnightFile, undefined, 1);
+      case PieceType.bishop:
+        return PIXI.Sprite.fromImage(blackBishopFile, undefined, 1);
+      case PieceType.queen:
+        return PIXI.Sprite.fromImage(blackQueenFile, undefined, 1);
+      case PieceType.king:
+        return PIXI.Sprite.fromImage(blackKingFile, undefined, 1);
+      default:
+        return piece; // Here piece is of type never, so we may return it as a Pixi.Sprite
+    }
+  }
+}
+
+/**
+ * Here Piece can't extend PIXI.Sprite, as we initialize the sprite via a
+ * static function, not a constructor.
+ */
+class Piece {
+  public sprite: PIXI.Sprite;
+  constructor(
+    readonly type: PieceType,
+    readonly color: PlayerColor,
+    readonly position: Position
+  ) {
+    this.sprite = loadPieceSprite(type, color);
+    this.sprite.x = 100 * position.x;
+    this.sprite.y = 100 * position.y;
+  }
+}
+
 app.stage.addChild(boardBackground());
 let board = new Board();
 board.x = 50;
 board.y = 50;
 app.stage.addChild(board);
+
+board.addChild(
+  new Piece(PieceType.pawn, PlayerColor.black, { kind: "position", x: 3, y: 1 })
+    .sprite
+);
+board.addChild(
+  new Piece(PieceType.king, PlayerColor.black, { kind: "position", x: 4, y: 0 })
+    .sprite
+);
