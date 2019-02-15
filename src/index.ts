@@ -3,22 +3,33 @@ import message from "./message";
 
 console.log(message);
 
+const outputContainer = document.getElementById("output");
+if (outputContainer) {
+  outputContainer.innerHTML = "";
+}
+
 function simpleLog(text: string) {
   let p = document.createElement("p");
   p.innerHTML = text;
-  document.getElementById("output").appendChild(p);
+  if (outputContainer) {
+    outputContainer.appendChild(p);
+  }
 }
 
 const blackTileColor = 0x448844;
 const whiteTileColor = 0xccffcc;
+const blackTileHighlightColor = 0xaaaa66;
+const whiteTileHighlightColor = 0xddddcc;
 
 let pixiNode = document.getElementById("pixi");
 
 let app = new PIXI.Application(900, 900, {
   backgroundColor: whiteTileColor
 });
-pixiNode.innerHTML = "";
-pixiNode.appendChild(app.view);
+if (pixiNode) {
+  pixiNode.innerHTML = "";
+  pixiNode.appendChild(app.view);
+}
 
 function boardBackground() {
   var graphics = new PIXI.Graphics();
@@ -28,26 +39,11 @@ function boardBackground() {
   return graphics;
 }
 
-function blackTile(x, y) {
-  var graphics = new PIXI.Graphics();
-  graphics.beginFill(blackTileColor);
-  graphics.lineStyle();
-  graphics.drawRect(50 + x * 100, 50 + y * 100, 100, 100);
-  return graphics;
-}
-
-function whiteTile(x, y) {
-  var graphics = new PIXI.Graphics();
-  graphics.beginFill(whiteTileColor);
-  graphics.lineStyle();
-  graphics.drawRect(50 + x * 100, 50 + y * 100, 100, 100);
-  return graphics;
-}
-
 type TileColor = "whiteTile" | "blackTile";
 
 class Tile extends PIXI.Graphics {
   readonly tileColor: TileColor;
+  private highlight: boolean = false;
   constructor(readonly tilePosition: Position, private board: Board) {
     super();
     if (isEvenPosition(this.tilePosition)) {
@@ -55,22 +51,39 @@ class Tile extends PIXI.Graphics {
     } else {
       this.tileColor = "blackTile";
     }
+    this.determineTint();
 
     this.lineStyle();
-    this.beginFill(this.fill());
+    this.beginFill(0xffffff);
     this.drawRect(0, 0, 100, 100);
     this.x = tilePosition.x * 100;
     this.y = tilePosition.y * 100;
 
-    this.on("click", event => board.onClick(this.tilePosition));
+    this.on("click", () => board.onClick(this.tilePosition));
     this.interactive = true;
   }
-  fill(): number {
-    if (this.tileColor == "whiteTile") {
-      return whiteTileColor;
+  determineTint() {
+    if (!this.highlight) {
+      if (this.tileColor == "whiteTile") {
+        this.tint = whiteTileColor;
+      } else {
+        this.tint = blackTileColor;
+      }
     } else {
-      return blackTileColor;
+      if (this.tileColor == "whiteTile") {
+        this.tint = whiteTileHighlightColor;
+      } else {
+        this.tint = blackTileHighlightColor;
+      }
     }
+  }
+  clearHighlight() {
+    this.highlight = false;
+    this.determineTint();
+  }
+  setHighlight() {
+    this.highlight = true;
+    this.determineTint();
   }
 }
 
@@ -85,20 +98,37 @@ function isEvenPosition(p: Position) {
 }
 
 class Board extends PIXI.Container {
-  private highlight: Position | null;
+  private highlight: Position | null = null;
+  private tiles: Array<Array<Tile>> = new Array(8);
   constructor() {
     super();
 
     for (let x = 0; x < 8; x++) {
+      let column = new Array(8);
       for (let y = 0; y < 8; y++) {
         let tile = new Tile({ kind: "position", x, y }, this);
         this.addChild(tile);
+        column[y] = tile;
       }
+      this.tiles[x] = column;
     }
-    this.on("mousedown", event => console.log("testing"));
+    this.on("mousedown", () => console.log("testing"));
   }
   onClick(p: Position) {
-    simpleLog("hi from " + p.x + ", " + p.y);
+    simpleLog("Click on " + p.x + ", " + p.y);
+    this.clearHighlight();
+    this.setHighlight(p);
+  }
+  clearHighlight() {
+    if (this.highlight == null) {
+      simpleLog("isNull");
+      return;
+    }
+    this.tiles[this.highlight.x][this.highlight.y].clearHighlight();
+  }
+  setHighlight(p: Position) {
+    this.tiles[p.x][p.y].setHighlight();
+    this.highlight = p;
   }
 }
 
