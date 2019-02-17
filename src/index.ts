@@ -1,7 +1,12 @@
 // index.ts
-import message from "./message";
-
-console.log(message);
+import {
+  BoardMap,
+  Position,
+  TileColor,
+  PlayerColor,
+  PieceType,
+  isEvenPosition
+} from "./basicTypes";
 
 // Placeholder Graphics from https://openclipart.org/user-detail/akiross
 // TODO: Use a Tileset
@@ -54,18 +59,15 @@ function boardBackground() {
   graphics.drawRect(45, 45, 810, 810);
   return graphics;
 }
-
-type TileColor = "whiteTile" | "blackTile";
-
 class Tile extends PIXI.Graphics {
   readonly tileColor: TileColor;
   private highlight: boolean = false;
   constructor(readonly tilePosition: Position, private board: Board) {
     super();
     if (isEvenPosition(this.tilePosition)) {
-      this.tileColor = "whiteTile";
+      this.tileColor = TileColor.white;
     } else {
-      this.tileColor = "blackTile";
+      this.tileColor = TileColor.black;
     }
     this.determineTint();
 
@@ -82,13 +84,13 @@ class Tile extends PIXI.Graphics {
   }
   determineTint() {
     if (!this.highlight) {
-      if (this.tileColor == "whiteTile") {
+      if (this.tileColor == TileColor.white) {
         this.tint = whiteTileColor;
       } else {
         this.tint = blackTileColor;
       }
     } else {
-      if (this.tileColor == "whiteTile") {
+      if (this.tileColor == TileColor.black) {
         this.tint = whiteTileHighlightColor;
       } else {
         this.tint = blackTileHighlightColor;
@@ -104,16 +106,6 @@ class Tile extends PIXI.Graphics {
     this.determineTint();
   }
 }
-
-interface Position {
-  x: number;
-  y: number;
-}
-
-function isEvenPosition(p: Position) {
-  return (p.x + p.y) % 2 == 0;
-}
-
 class Board extends PIXI.Container {
   private highlight: Position | null = null;
   private readonly tiles: BoardMap<Tile>;
@@ -126,7 +118,6 @@ class Board extends PIXI.Container {
     this.on("mousedown", () => console.log("testing"));
   }
   onClick(p: Position) {
-    simpleLog("Click on " + p.x + ", " + p.y);
     this.clearHighlight();
     this.setHighlight(p);
   }
@@ -141,55 +132,6 @@ class Board extends PIXI.Container {
     this.highlight = p;
   }
 }
-
-/**
- * The BoardMap class implements a Map object which takes Position as the index
- * and stores a value of type T.
- */
-class BoardMap<T> {
-  private values: Array<Array<T>> = new Array(8);
-  constructor(init: (p: Position) => T) {
-    for (let x = 0; x < 8; x++) {
-      this.values[x] = new Array(8);
-      for (let y = 0; y < 8; y++) {
-        this.values[x][y] = init({ x, y });
-      }
-    }
-  }
-  public get(p: Position): T {
-    return this.values[p.x][p.y];
-  }
-  public set(p: Position, value: T) {
-    this.values[p.x][p.y] = value;
-  }
-  /**
-   * The `forEach()` method executes a provided function once for each position
-   * of the Board. It will execute the leftmost column first from top to bottom
-   * and then continue column by column.
-   * @param f Function to execute for each element.
-   */
-  public forEach(f: (p: Position, v: T, map: BoardMap<T>) => any) {
-    for (let x = 0; x < 8; x++) {
-      for (let y = 0; y < 8; y++) {
-        f({ x, y }, this.get({ x, y }), this);
-      }
-    }
-  }
-}
-
-enum PieceType {
-  pawn,
-  rock,
-  knight,
-  bishop,
-  queen,
-  king
-}
-enum PlayerColor {
-  white,
-  black
-}
-
 function loadPieceSprite(piece: PieceType, color: PlayerColor): PIXI.Sprite {
   if (color == PlayerColor.white) {
     switch (piece) {
