@@ -59,6 +59,7 @@ function boardBackground() {
   graphics.drawRect(45, 45, 810, 810);
   return graphics;
 }
+
 class Tile extends PIXI.Graphics {
   readonly tileColor: TileColor;
   private highlight: boolean = false;
@@ -91,9 +92,9 @@ class Tile extends PIXI.Graphics {
       }
     } else {
       if (this.tileColor == TileColor.black) {
-        this.tint = whiteTileHighlightColor;
-      } else {
         this.tint = blackTileHighlightColor;
+      } else {
+        this.tint = whiteTileHighlightColor;
       }
     }
   }
@@ -106,6 +107,7 @@ class Tile extends PIXI.Graphics {
     this.determineTint();
   }
 }
+
 class Board extends PIXI.Container {
   private highlight: Position | null = null;
   private readonly tiles: BoardMap<Tile>;
@@ -154,8 +156,33 @@ class Board extends PIXI.Container {
 
     return new Piece(pieceType, pieceColor, p);
   }
+  /**
+   * This event is triggered, when any tile is clicked. Based on its state,
+   * the Board decides which action to take.
+   */
   onClick(p: Position) {
-    this.clearHighlight();
+    const piece = this.pieces.get(p);
+    if (this.highlight == null) {
+      if (piece != null) {
+        this.onSelectPiece(p, piece);
+      }
+    } else {
+      // Make sure, that the target position isn't occupied.
+      // TODO: Check if this is a legal move.
+      if (piece == null) {
+        // Move the piece.
+        const highlightedPiece = this.pieces.get(this.highlight);
+        if (highlightedPiece == null) {
+          throw new Error("An empty position is highlighted.");
+        }
+        highlightedPiece.position = p;
+        this.pieces.set(this.highlight, null);
+        this.pieces.set(p, highlightedPiece);
+      }
+      this.clearHighlight();
+    }
+  }
+  onSelectPiece(p: Position, piece: Piece) {
     this.setHighlight(p);
   }
   clearHighlight() {
@@ -163,12 +190,14 @@ class Board extends PIXI.Container {
       return;
     }
     this.tiles.get(this.highlight).clearHighlight();
+    this.highlight = null;
   }
   setHighlight(p: Position) {
     this.tiles.get(p).setHighlight();
     this.highlight = p;
   }
 }
+
 function loadPieceSprite(piece: PieceType, color: PlayerColor): PIXI.Sprite {
   if (color == PlayerColor.white) {
     switch (piece) {
@@ -213,14 +242,22 @@ function loadPieceSprite(piece: PieceType, color: PlayerColor): PIXI.Sprite {
  */
 class Piece {
   public sprite: PIXI.Sprite;
+  private _position: Position;
   constructor(
     readonly type: PieceType,
     readonly color: PlayerColor,
-    readonly position: Position
+    position: Position
   ) {
     this.sprite = loadPieceSprite(type, color);
-    this.sprite.x = 100 * position.x;
-    this.sprite.y = 100 * position.y;
+    this.position = position;
+  }
+  get position(): Position {
+    return this._position;
+  }
+  set position(p: Position) {
+    this._position = p;
+    this.sprite.x = 100 * p.x;
+    this.sprite.y = 100 * p.y;
   }
 }
 
