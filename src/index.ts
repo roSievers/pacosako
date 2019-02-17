@@ -5,7 +5,7 @@ console.log(message);
 
 // Placeholder Graphics from https://openclipart.org/user-detail/akiross
 // TODO: Use a Tileset
-// Get graphics which look even better.
+// TODO: Get graphics which look even better.
 const whitePawnFile: string = require("../assets/pawn-w.png");
 const whiteRockFile: string = require("../assets/rock-w.png");
 const whiteKnightFile: string = require("../assets/knight-w.png");
@@ -106,7 +106,6 @@ class Tile extends PIXI.Graphics {
 }
 
 interface Position {
-  kind: "position";
   x: number;
   y: number;
 }
@@ -117,19 +116,13 @@ function isEvenPosition(p: Position) {
 
 class Board extends PIXI.Container {
   private highlight: Position | null = null;
-  private tiles: Array<Array<Tile>> = new Array(8);
+  private readonly tiles: BoardMap<Tile>;
   constructor() {
     super();
 
-    for (let x = 0; x < 8; x++) {
-      let column = new Array(8);
-      for (let y = 0; y < 8; y++) {
-        let tile = new Tile({ kind: "position", x, y }, this);
-        this.addChild(tile);
-        column[y] = tile;
-      }
-      this.tiles[x] = column;
-    }
+    this.tiles = new BoardMap(p => new Tile(p, this));
+    this.tiles.forEach((_, tile) => this.addChild(tile));
+
     this.on("mousedown", () => console.log("testing"));
   }
   onClick(p: Position) {
@@ -139,14 +132,48 @@ class Board extends PIXI.Container {
   }
   clearHighlight() {
     if (this.highlight == null) {
-      simpleLog("isNull");
       return;
     }
-    this.tiles[this.highlight.x][this.highlight.y].clearHighlight();
+    this.tiles.get(this.highlight).clearHighlight();
   }
   setHighlight(p: Position) {
-    this.tiles[p.x][p.y].setHighlight();
+    this.tiles.get(p).setHighlight();
     this.highlight = p;
+  }
+}
+
+/**
+ * The BoardMap class implements a Map object which takes Position as the index
+ * and stores a value of type T.
+ */
+class BoardMap<T> {
+  private values: Array<Array<T>> = new Array(8);
+  constructor(init: (p: Position) => T) {
+    for (let x = 0; x < 8; x++) {
+      this.values[x] = new Array(8);
+      for (let y = 0; y < 8; y++) {
+        this.values[x][y] = init({ x, y });
+      }
+    }
+  }
+  public get(p: Position): T {
+    return this.values[p.x][p.y];
+  }
+  public set(p: Position, value: T) {
+    this.values[p.x][p.y] = value;
+  }
+  /**
+   * The `forEach()` method executes a provided function once for each position
+   * of the Board. It will execute the leftmost column first from top to bottom
+   * and then continue column by column.
+   * @param f Function to execute for each element.
+   */
+  public forEach(f: (p: Position, v: T, map: BoardMap<T>) => any) {
+    for (let x = 0; x < 8; x++) {
+      for (let y = 0; y < 8; y++) {
+        f({ x, y }, this.get({ x, y }), this);
+      }
+    }
   }
 }
 
@@ -225,10 +252,8 @@ board.y = 50;
 app.stage.addChild(board);
 
 board.addChild(
-  new Piece(PieceType.pawn, PlayerColor.black, { kind: "position", x: 3, y: 1 })
-    .sprite
+  new Piece(PieceType.pawn, PlayerColor.black, { x: 3, y: 1 }).sprite
 );
 board.addChild(
-  new Piece(PieceType.king, PlayerColor.black, { kind: "position", x: 4, y: 0 })
-    .sprite
+  new Piece(PieceType.king, PlayerColor.black, { x: 4, y: 0 }).sprite
 );
