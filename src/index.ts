@@ -205,11 +205,9 @@ class Board extends PIXI.Container {
   private onBeginSelection(p: Position): any {
     const piecesOnClickedTile: Array<Piece> = this.piecesAt(p);
     if (piecesOnClickedTile.length == 1) {
-      // TODO: Allow selection of a pair.
       this.setHighlight(piecesOnClickedTile[0]);
     }
     if (piecesOnClickedTile.length == 2) {
-      // TODO: Allow selection of a pair.
       this.setHighlight(
         new Pair(piecesOnClickedTile[0], piecesOnClickedTile[1])
       );
