@@ -48,6 +48,15 @@ export function isEvenPosition(p: Position) {
 }
 
 /**
+ * Helper function to turn an internal position {x:5, y:2} into a human readable
+ * position "f3".
+ * @param p
+ */
+export function chessPosition(p: Position): string {
+  return "abcdefgh"[p.x] + p.y;
+}
+
+/**
  * The BoardMap class implements a Map object which takes Position as the index
  * and stores a value of type T.
  */

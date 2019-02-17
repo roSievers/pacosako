@@ -5,7 +5,8 @@ import {
   TileColor,
   PlayerColor,
   PieceType,
-  isEvenPosition
+  isEvenPosition,
+  chessPosition
 } from "./basicTypes";
 
 // Placeholder Graphics from https://openclipart.org/user-detail/akiross
@@ -110,8 +111,11 @@ class Tile extends PIXI.Graphics {
 }
 
 class Board extends PIXI.Container {
-  private highlight: Position | null = null;
+  /** Represents the piece that is currently touched by the player. */
+  private highlight: Piece | null = null;
+  /** The tiles which make up the board. */
   private readonly tiles: BoardMap<Tile>;
+  /** A flat list of all pieces. They remember their own position. */
   private readonly pieces: Array<Piece> = this.createPieces();
   constructor() {
     super();
@@ -160,41 +164,43 @@ class Board extends PIXI.Container {
    * This event is triggered, when any tile is clicked. Based on its state,
    * the Board decides which action to take.
    */
-  onClick(p: Position) {
-    const piecesOnClickedTile: Array<Piece> = this.piecesAt(p);
-    console.log(piecesOnClickedTile);
+  public onClick(p: Position) {
     if (this.highlight == null) {
-      if (piecesOnClickedTile.length > 0) {
-        this.onSelectPiece(p, piecesOnClickedTile);
-      }
+      this.onBeginSelection(p);
     } else {
-      // Make sure, that the target position isn't occupied.
-      // TODO: Check if this is a legal move.
+      const piecesOnClickedTile: Array<Piece> = this.piecesAt(p);
       if (piecesOnClickedTile.length == 0) {
-        // Move the piece.
-        const highlightedPieces = this.piecesAt(this.highlight);
-        simpleLog("highlighted: " + highlightedPieces);
-        if (highlightedPieces.length == 0) {
-          throw new Error("An empty position is highlighted.");
-        }
-        highlightedPieces.forEach(piece => (piece.position = p));
+        this.onMoveCommand(this.highlight, p);
       }
-      this.clearHighlight();
     }
   }
-  onSelectPiece(p: Position, pieces: Array<Piece>) {
-    this.setHighlight(p);
+  /**
+   * This function may only be called, if there are no pieces at
+   * the target Position.
+   */
+  onMoveCommand(highlightedPieces: Piece, target: Position): any {
+    // TODO: Check if this is a legal move.
+
+    this.clearHighlight(); // Here it is important that we clear before we move.
+    highlightedPieces.position = target;
+  }
+  private onBeginSelection(p: Position): any {
+    const piecesOnClickedTile: Array<Piece> = this.piecesAt(p);
+    if (piecesOnClickedTile.length > 0) {
+      // TODO: Allow selection of a pair.
+      this.setHighlight(piecesOnClickedTile[0]);
+    }
   }
   clearHighlight() {
     if (this.highlight == null) {
       return;
     }
-    this.tiles.get(this.highlight).clearHighlight();
+    this.tiles.get(this.highlight.position).clearHighlight();
     this.highlight = null;
   }
-  setHighlight(p: Position) {
-    this.tiles.get(p).setHighlight();
-    this.highlight = p;
+  setHighlight(highlightedPieces: Piece) {
+    this.tiles.get(highlightedPieces.position).setHighlight();
+    this.highlight = highlightedPieces;
   }
 }
 
