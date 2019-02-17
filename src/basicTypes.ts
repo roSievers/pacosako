@@ -53,6 +53,10 @@ export function samePosition(p1: Position, p2: Position) {
   return p1.x == p2.x && p1.y == p2.y;
 }
 
+export function addPosition(p1: Position, p2: Position) {
+  return { x: p1.x + p2.x, y: p1.y + p2.y };
+}
+
 /**
  * Helper function to turn an internal position {x:5, y:2} into a human readable
  * position "f3".

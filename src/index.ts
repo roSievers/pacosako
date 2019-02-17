@@ -6,7 +6,8 @@ import {
   PlayerColor,
   PieceType,
   isEvenPosition,
-  samePosition
+  samePosition,
+  addPosition
 } from "./basicTypes";
 
 // Placeholder Graphics from https://openclipart.org/user-detail/akiross
@@ -77,8 +78,8 @@ class Tile extends PIXI.Graphics {
     this.beginFill(0xffffff);
     this.drawRect(0, 0, 100, 100);
     const pos = pixelPosition(tilePosition);
-    this.x = pos.x_px;
-    this.y = pos.y_px;
+    this.x = pos.x;
+    this.y = pos.y;
 
     this.on("click", () => board.onClick(this.tilePosition));
     this.interactive = true;
@@ -290,19 +291,19 @@ class Piece {
     this.sprite = loadPieceSprite(type, color);
     this.position = position;
   }
-  get offset(): number {
+  get offset(): Position {
     if (this.state == PieceState.alone) {
-      return 0;
+      return { x: 0, y: 0 };
     }
     if (this.state == PieceState.dancing) {
       if (this.color == PlayerColor.white) {
-        return 20;
+        return { x: 20, y: 0 };
       } else {
-        return -20;
+        return { x: -20, y: 0 };
       }
     }
     // TODO: takingOver & united
-    return 0;
+    return { x: 0, y: 0 };
   }
   get state(): PieceState {
     return this._state;
@@ -319,9 +320,9 @@ class Piece {
     this.recalculatePosition();
   }
   recalculatePosition() {
-    const pos = pixelPosition(this._position);
-    this.sprite.x = pos.x_px + this.offset;
-    this.sprite.y = pos.y_px;
+    const pos = addPosition(pixelPosition(this._position), this.offset);
+    this.sprite.x = pos.x;
+    this.sprite.y = pos.y;
   }
   isAt(p: Position): any {
     return this._position.x == p.x && this._position.y == p.y;
@@ -349,10 +350,9 @@ class Pair {
 
 /**
  * Calculates the screen position of a tile position relative to the board.
- * This function returns {x_px, y_px} so it can't be mixed up with a Position.
  */
-function pixelPosition(p: Position): { x_px: number; y_px: number } {
-  return { x_px: 100 * p.x, y_px: 700 - 100 * p.y };
+function pixelPosition(p: Position): Position {
+  return { x: 100 * p.x, y: 700 - 100 * p.y };
 }
 
 app.stage.addChild(boardBackground());
