@@ -109,13 +109,50 @@ class Tile extends PIXI.Graphics {
 class Board extends PIXI.Container {
   private highlight: Position | null = null;
   private readonly tiles: BoardMap<Tile>;
+  private readonly pieces: BoardMap<Piece | null>;
   constructor() {
     super();
 
     this.tiles = new BoardMap(p => new Tile(p, this));
     this.tiles.forEach((_, tile) => this.addChild(tile));
 
+    this.pieces = new BoardMap(this.initPiece);
+    this.pieces.forEach((_, piece) => {
+      if (piece != null) {
+        this.addChild(piece.sprite);
+      }
+    });
+
     this.on("mousedown", () => console.log("testing"));
+  }
+  private initPiece(p: Position): Piece | null {
+    let pieceColor: PlayerColor;
+    let pieceType: PieceType;
+
+    if (p.y > 1 && p.y < 6) {
+      // There are no pieces in the middle.
+      return null;
+    } else if (p.y == 1 || p.y == 6) {
+      pieceType = PieceType.pawn;
+    } else if (p.x == 0 || p.x == 7) {
+      pieceType = PieceType.rock;
+    } else if (p.x == 1 || p.x == 6) {
+      pieceType = PieceType.knight;
+    } else if (p.x == 2 || p.x == 5) {
+      pieceType = PieceType.bishop;
+    } else if (isEvenPosition(p)) {
+      pieceType = PieceType.queen;
+    } else {
+      pieceType = PieceType.king;
+    }
+
+    if (p.y <= 1) {
+      pieceColor = PlayerColor.black;
+    } else {
+      pieceColor = PlayerColor.white;
+    }
+
+    return new Piece(pieceType, pieceColor, p);
   }
   onClick(p: Position) {
     this.clearHighlight();
@@ -192,10 +229,3 @@ let board = new Board();
 board.x = 50;
 board.y = 50;
 app.stage.addChild(board);
-
-board.addChild(
-  new Piece(PieceType.pawn, PlayerColor.black, { x: 3, y: 1 }).sprite
-);
-board.addChild(
-  new Piece(PieceType.king, PlayerColor.black, { x: 4, y: 0 }).sprite
-);
