@@ -1,3 +1,5 @@
+import { PositionalAudio } from "three";
+
 // basicTypes.ts
 
 /**
@@ -45,6 +47,10 @@ export interface Position {
  */
 export function isEvenPosition(p: Position) {
   return (p.x + p.y) % 2 == 0;
+}
+
+export function samePosition(p1: Position, p2: Position) {
+  return p1.x == p2.x && p1.y == p2.y;
 }
 
 /**

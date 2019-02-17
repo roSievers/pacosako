@@ -6,7 +6,7 @@ import {
   PlayerColor,
   PieceType,
   isEvenPosition,
-  chessPosition
+  samePosition
 } from "./basicTypes";
 
 // Placeholder Graphics from https://openclipart.org/user-detail/akiross
@@ -111,8 +111,8 @@ class Tile extends PIXI.Graphics {
 }
 
 class Board extends PIXI.Container {
-  /** Represents the piece that is currently touched by the player. */
-  private highlight: Piece | null = null;
+  /** Represents the piece that is currently held by the player. */
+  private highlight: null | Piece | Pair = null;
   /** The tiles which make up the board. */
   private readonly tiles: BoardMap<Tile>;
   /** A flat list of all pieces. They remember their own position. */
@@ -171,14 +171,32 @@ class Board extends PIXI.Container {
       const piecesOnClickedTile: Array<Piece> = this.piecesAt(p);
       if (piecesOnClickedTile.length == 0) {
         this.onMoveCommand(this.highlight, p);
+      } else if (this.highlight instanceof Piece) {
+        if (piecesOnClickedTile.length == 1) {
+          this.onDanceCommand(this.highlight, piecesOnClickedTile[0]);
+        } else {
+          this.clearHighlight();
+        }
+      } else {
+        this.clearHighlight();
       }
     }
   }
+  onDanceCommand(highlightedPiece: Piece, partner: Piece): any {
+    if (highlightedPiece.color != partner.color) {
+      this.onMoveCommand(highlightedPiece, partner.position);
+    } else {
+      this.clearHighlight();
+    }
+  }
   /**
-   * This function may only be called, if there are no pieces at
-   * the target Position.
+   * Moves a piece to the target position without regard for pieces that are
+   * already present at the target position. Make sure that moving is ok,
+   * before you call this function.
+   *
+   * This function should however check, if the move is legal.
    */
-  onMoveCommand(highlightedPieces: Piece, target: Position): any {
+  onMoveCommand(highlightedPieces: Piece | Pair, target: Position): any {
     // TODO: Check if this is a legal move.
 
     this.clearHighlight(); // Here it is important that we clear before we move.
@@ -186,19 +204,26 @@ class Board extends PIXI.Container {
   }
   private onBeginSelection(p: Position): any {
     const piecesOnClickedTile: Array<Piece> = this.piecesAt(p);
-    if (piecesOnClickedTile.length > 0) {
+    if (piecesOnClickedTile.length == 1) {
       // TODO: Allow selection of a pair.
       this.setHighlight(piecesOnClickedTile[0]);
     }
+    if (piecesOnClickedTile.length == 2) {
+      // TODO: Allow selection of a pair.
+      this.setHighlight(
+        new Pair(piecesOnClickedTile[0], piecesOnClickedTile[1])
+      );
+    }
   }
   clearHighlight() {
+    // TODO: clean up calls to this function.
     if (this.highlight == null) {
       return;
     }
     this.tiles.get(this.highlight.position).clearHighlight();
     this.highlight = null;
   }
-  setHighlight(highlightedPieces: Piece) {
+  setHighlight(highlightedPieces: Piece | Pair) {
     this.tiles.get(highlightedPieces.position).setHighlight();
     this.highlight = highlightedPieces;
   }
@@ -257,17 +282,43 @@ class Piece {
     this.sprite = loadPieceSprite(type, color);
     this.position = position;
   }
+  get offset(): number {
+    if (this.color == PlayerColor.white) {
+      return 20;
+    } else {
+      return -20;
+    }
+  }
   get position(): Position {
     return this._position;
   }
   set position(p: Position) {
     this._position = p;
     const pos = pixelPosition(p);
-    this.sprite.x = pos.x_px;
+    this.sprite.x = pos.x_px + this.offset;
     this.sprite.y = pos.y_px;
   }
   isAt(p: Position): any {
     return this._position.x == p.x && this._position.y == p.y;
+  }
+}
+
+class Pair {
+  constructor(public whitePiece: Piece, public blackPiece: Piece) {
+    this.assertIntegrity();
+  }
+  assertIntegrity() {
+    if (!samePosition(this.whitePiece.position, this.blackPiece.position)) {
+      throw new Error("Pieces of a pair must share of Position.");
+    }
+  }
+  get position(): Position {
+    this.assertIntegrity();
+    return this.whitePiece.position;
+  }
+  set position(p: Position) {
+    this.whitePiece.position = p;
+    this.blackPiece.position = p;
   }
 }
 
