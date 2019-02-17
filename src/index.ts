@@ -184,6 +184,8 @@ class Board extends PIXI.Container {
   }
   onDanceCommand(highlightedPiece: Piece, partner: Piece): any {
     if (highlightedPiece.color != partner.color) {
+      highlightedPiece.state = PieceState.dancing;
+      partner.state = PieceState.dancing;
       this.onMoveCommand(highlightedPiece, partner.position);
     } else {
       this.clearHighlight();
@@ -265,6 +267,13 @@ function loadPieceSprite(piece: PieceType, color: PlayerColor): PIXI.Sprite {
   }
 }
 
+enum PieceState {
+  alone,
+  dancing,
+  takingOver,
+  leavingUnion
+}
+
 /**
  * Here Piece can't extend PIXI.Sprite, as we initialize the sprite via a
  * static function, not a constructor.
@@ -272,6 +281,7 @@ function loadPieceSprite(piece: PieceType, color: PlayerColor): PIXI.Sprite {
 class Piece {
   public sprite: PIXI.Sprite;
   private _position: Position;
+  public _state: PieceState = PieceState.alone;
   constructor(
     readonly type: PieceType,
     readonly color: PlayerColor,
@@ -281,18 +291,35 @@ class Piece {
     this.position = position;
   }
   get offset(): number {
-    if (this.color == PlayerColor.white) {
-      return 20;
-    } else {
-      return -20;
+    if (this.state == PieceState.alone) {
+      return 0;
     }
+    if (this.state == PieceState.dancing) {
+      if (this.color == PlayerColor.white) {
+        return 20;
+      } else {
+        return -20;
+      }
+    }
+    // TODO: takingOver & united
+    return 0;
+  }
+  get state(): PieceState {
+    return this._state;
+  }
+  set state(newState: PieceState) {
+    this._state = newState;
+    this.recalculatePosition();
   }
   get position(): Position {
     return this._position;
   }
   set position(p: Position) {
     this._position = p;
-    const pos = pixelPosition(p);
+    this.recalculatePosition();
+  }
+  recalculatePosition() {
+    const pos = pixelPosition(this._position);
     this.sprite.x = pos.x_px + this.offset;
     this.sprite.y = pos.y_px;
   }
