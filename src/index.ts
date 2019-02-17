@@ -66,17 +66,18 @@ class Tile extends PIXI.Graphics {
   constructor(readonly tilePosition: Position, private board: Board) {
     super();
     if (isEvenPosition(this.tilePosition)) {
-      this.tileColor = TileColor.white;
-    } else {
       this.tileColor = TileColor.black;
+    } else {
+      this.tileColor = TileColor.white;
     }
     this.determineTint();
 
     this.lineStyle();
     this.beginFill(0xffffff);
     this.drawRect(0, 0, 100, 100);
-    this.x = tilePosition.x * 100;
-    this.y = tilePosition.y * 100;
+    const pos = pixelPosition(tilePosition);
+    this.x = pos.x_px;
+    this.y = pos.y_px;
 
     this.on("click", () => board.onClick(this.tilePosition));
     this.interactive = true;
@@ -111,78 +112,77 @@ class Tile extends PIXI.Graphics {
 class Board extends PIXI.Container {
   private highlight: Position | null = null;
   private readonly tiles: BoardMap<Tile>;
-  private readonly pieces: BoardMap<Piece | null>;
+  private readonly pieces: Array<Piece> = this.createPieces();
   constructor() {
     super();
 
     this.tiles = new BoardMap(p => new Tile(p, this));
     this.tiles.forEach((_, tile) => this.addChild(tile));
 
-    this.pieces = new BoardMap(this.initPiece);
-    this.pieces.forEach((_, piece) => {
-      if (piece != null) {
-        this.addChild(piece.sprite);
-      }
-    });
+    this.pieces.forEach(piece => this.addChild(piece.sprite));
 
     this.on("mousedown", () => console.log("testing"));
   }
-  private initPiece(p: Position): Piece | null {
-    let pieceColor: PlayerColor;
-    let pieceType: PieceType;
-
-    if (p.y > 1 && p.y < 6) {
-      // There are no pieces in the middle.
-      return null;
-    } else if (p.y == 1 || p.y == 6) {
-      pieceType = PieceType.pawn;
-    } else if (p.x == 0 || p.x == 7) {
-      pieceType = PieceType.rock;
-    } else if (p.x == 1 || p.x == 6) {
-      pieceType = PieceType.knight;
-    } else if (p.x == 2 || p.x == 5) {
-      pieceType = PieceType.bishop;
-    } else if (isEvenPosition(p)) {
-      pieceType = PieceType.queen;
-    } else {
-      pieceType = PieceType.king;
+  createPieces(): Array<Piece> {
+    let pieces: Array<Piece> = new Array(32);
+    // All pawns
+    for (let x = 0; x < 8; x++) {
+      pieces[x] = new Piece(PieceType.pawn, PlayerColor.white, { x, y: 1 });
+      pieces[x + 16] = new Piece(PieceType.pawn, PlayerColor.black, {
+        x,
+        y: 6
+      });
     }
-
-    if (p.y <= 1) {
-      pieceColor = PlayerColor.black;
-    } else {
-      pieceColor = PlayerColor.white;
-    }
-
-    return new Piece(pieceType, pieceColor, p);
+    // White pieces
+    pieces[8] = new Piece(PieceType.rock, PlayerColor.white, { x: 0, y: 0 });
+    pieces[9] = new Piece(PieceType.knight, PlayerColor.white, { x: 1, y: 0 });
+    pieces[10] = new Piece(PieceType.bishop, PlayerColor.white, { x: 2, y: 0 });
+    pieces[11] = new Piece(PieceType.queen, PlayerColor.white, { x: 3, y: 0 });
+    pieces[12] = new Piece(PieceType.king, PlayerColor.white, { x: 4, y: 0 });
+    pieces[13] = new Piece(PieceType.bishop, PlayerColor.white, { x: 5, y: 0 });
+    pieces[14] = new Piece(PieceType.knight, PlayerColor.white, { x: 6, y: 0 });
+    pieces[15] = new Piece(PieceType.rock, PlayerColor.white, { x: 7, y: 0 });
+    // Black pieces
+    pieces[24] = new Piece(PieceType.rock, PlayerColor.black, { x: 0, y: 7 });
+    pieces[25] = new Piece(PieceType.knight, PlayerColor.black, { x: 1, y: 7 });
+    pieces[26] = new Piece(PieceType.bishop, PlayerColor.black, { x: 2, y: 7 });
+    pieces[27] = new Piece(PieceType.queen, PlayerColor.black, { x: 3, y: 7 });
+    pieces[28] = new Piece(PieceType.king, PlayerColor.black, { x: 4, y: 7 });
+    pieces[29] = new Piece(PieceType.bishop, PlayerColor.black, { x: 5, y: 7 });
+    pieces[30] = new Piece(PieceType.knight, PlayerColor.black, { x: 6, y: 7 });
+    pieces[31] = new Piece(PieceType.rock, PlayerColor.black, { x: 7, y: 7 });
+    return pieces;
+  }
+  piecesAt(p: Position): Array<Piece> {
+    return this.pieces.filter(piece => piece.isAt(p));
   }
   /**
    * This event is triggered, when any tile is clicked. Based on its state,
    * the Board decides which action to take.
    */
   onClick(p: Position) {
-    const piece = this.pieces.get(p);
+    const piecesOnClickedTile: Array<Piece> = this.piecesAt(p);
+    console.log(piecesOnClickedTile);
     if (this.highlight == null) {
-      if (piece != null) {
-        this.onSelectPiece(p, piece);
+      if (piecesOnClickedTile.length > 0) {
+        this.onSelectPiece(p, piecesOnClickedTile);
       }
     } else {
       // Make sure, that the target position isn't occupied.
       // TODO: Check if this is a legal move.
-      if (piece == null) {
+      if (piecesOnClickedTile.length == 0) {
         // Move the piece.
-        const highlightedPiece = this.pieces.get(this.highlight);
-        if (highlightedPiece == null) {
+        const highlightedPieces = this.piecesAt(this.highlight);
+        simpleLog("highlighted: " + highlightedPieces);
+        if (highlightedPieces.length == 0) {
           throw new Error("An empty position is highlighted.");
         }
-        highlightedPiece.position = p;
-        this.pieces.set(this.highlight, null);
-        this.pieces.set(p, highlightedPiece);
+        highlightedPieces.forEach(piece => (piece.position = p));
       }
       this.clearHighlight();
     }
   }
-  onSelectPiece(p: Position, piece: Piece) {
+  onSelectPiece(p: Position, pieces: Array<Piece>) {
     this.setHighlight(p);
   }
   clearHighlight() {
@@ -256,9 +256,21 @@ class Piece {
   }
   set position(p: Position) {
     this._position = p;
-    this.sprite.x = 100 * p.x;
-    this.sprite.y = 100 * p.y;
+    const pos = pixelPosition(p);
+    this.sprite.x = pos.x_px;
+    this.sprite.y = pos.y_px;
   }
+  isAt(p: Position): any {
+    return this._position.x == p.x && this._position.y == p.y;
+  }
+}
+
+/**
+ * Calculates the screen position of a tile position relative to the board.
+ * This function returns {x_px, y_px} so it can't be mixed up with a Position.
+ */
+function pixelPosition(p: Position): { x_px: number; y_px: number } {
+  return { x_px: 100 * p.x, y_px: 700 - 100 * p.y };
 }
 
 app.stage.addChild(boardBackground());
