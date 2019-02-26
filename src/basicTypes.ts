@@ -35,16 +35,20 @@ export enum TileColor {
  * must be in the set {0, 1, .., 7}. A Position is immutable.
  */
 export class Position {
-  constructor(private _x: number, private _y: number) {
-    if (_x < 0 || 7 < _x || _y < 0 || 7 < _y) {
+  constructor(public readonly x: number, public readonly y: number) {
+    if (x < 0 || 7 < x || y < 0 || 7 < y) {
       throw new Error("Can't initialize Position with x=${x}, y=${y}.");
     }
   }
-  get x(): number {
-    return this._x;
+  equals(other: Position): boolean {
+    return this.x == other.x && this.y == other.y;
   }
-  get y(): number {
-    return this._y;
+  /**
+   * Helper function for coloring the tiles.
+   * @param p
+   */
+  get isEven(): boolean {
+    return (this.x + this.y) % 2 == 0;
   }
 }
 
@@ -52,13 +56,7 @@ export class Position {
  * The Vector class expresses an immutable pair of numbers x, y.
  */
 export class Vector {
-  constructor(private _x: number, private _y: number) {}
-  get x(): number {
-    return this._x;
-  }
-  get y(): number {
-    return this._y;
-  }
+  constructor(public readonly x: number, public readonly y: number) {}
   /** Returns a new zero vector. */
   static get zero(): Vector {
     return new Vector(0, 0);
@@ -71,25 +69,14 @@ export class Vector {
   static y(_y: number): Vector {
     return new Vector(0, _y);
   }
-}
-
-/**
- * Helper function for coloring the tiles.
- * @param p
- */
-export function isEvenPosition(p: Position): boolean {
-  return (p.x + p.y) % 2 == 0;
-}
-
-export function samePosition(p1: Position, p2: Position): boolean {
-  return p1.x == p2.x && p1.y == p2.y;
+  /** Takes another Vector and returns the sum as a new Vector. */
+  add(other: Vector): Vector {
+    return new Vector(this.x + other.x, this.y + other.y);
+  }
 }
 
 export function addPosition(p1: Position, p2: Position): Position {
   return new Position(p1.x + p2.x, p1.y + p2.y);
-}
-export function addVector(p1: Vector, p2: Vector) {
-  return new Vector(p1.x + p2.x, p1.y + p2.y);
 }
 
 /**

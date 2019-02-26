@@ -5,12 +5,9 @@ import {
   TileColor,
   PlayerColor,
   PieceType,
-  isEvenPosition,
-  samePosition,
-  addPosition,
-  Vector,
-  addVector
+  Vector
 } from "./basicTypes";
+import { PacoBoard, ChessPiece } from "./paco";
 
 // Placeholder Graphics from https://openclipart.org/user-detail/akiross
 // TODO: Use a Tileset
@@ -69,7 +66,7 @@ class Tile extends PIXI.Graphics {
   private highlight: boolean = false;
   constructor(readonly tilePosition: Position, private board: Board) {
     super();
-    if (isEvenPosition(this.tilePosition)) {
+    if (this.tilePosition.isEven) {
       this.tileColor = TileColor.black;
     } else {
       this.tileColor = TileColor.white;
@@ -118,6 +115,8 @@ class Board extends PIXI.Container {
   private highlight: null | Piece | Pair = null;
   /** The tiles which make up the board. */
   private readonly tiles: BoardMap<Tile>;
+  /** Internal representation of the Board. */
+  private pacoBoard: PacoBoard = new PacoBoard();
   /** A flat list of all pieces. They remember their own position. */
   private readonly pieces: Array<Piece> = this.createPieces();
   constructor() {
@@ -131,103 +130,7 @@ class Board extends PIXI.Container {
     this.on("mousedown", () => console.log("testing"));
   }
   createPieces(): Array<Piece> {
-    let pieces: Array<Piece> = new Array(32);
-    // All pawns
-    for (let x = 0; x < 8; x++) {
-      pieces[x] = new Piece(
-        PieceType.pawn,
-        PlayerColor.white,
-        new Position(x, 1)
-      );
-      pieces[x + 16] = new Piece(
-        PieceType.pawn,
-        PlayerColor.black,
-        new Position(x, 6)
-      );
-    }
-    // White pieces
-    pieces[8] = new Piece(
-      PieceType.rock,
-      PlayerColor.white,
-      new Position(0, 0)
-    );
-    pieces[9] = new Piece(
-      PieceType.knight,
-      PlayerColor.white,
-      new Position(1, 0)
-    );
-    pieces[10] = new Piece(
-      PieceType.bishop,
-      PlayerColor.white,
-      new Position(2, 0)
-    );
-    pieces[11] = new Piece(
-      PieceType.queen,
-      PlayerColor.white,
-      new Position(3, 0)
-    );
-    pieces[12] = new Piece(
-      PieceType.king,
-      PlayerColor.white,
-      new Position(4, 0)
-    );
-    pieces[13] = new Piece(
-      PieceType.bishop,
-      PlayerColor.white,
-      new Position(5, 0)
-    );
-    pieces[14] = new Piece(
-      PieceType.knight,
-      PlayerColor.white,
-      new Position(6, 0)
-    );
-    pieces[15] = new Piece(
-      PieceType.rock,
-      PlayerColor.white,
-      new Position(7, 0)
-    );
-    // Black pieces
-    pieces[24] = new Piece(
-      PieceType.rock,
-      PlayerColor.black,
-      new Position(0, 7)
-    );
-    pieces[25] = new Piece(
-      PieceType.knight,
-      PlayerColor.black,
-      new Position(1, 7)
-    );
-    pieces[26] = new Piece(
-      PieceType.bishop,
-      PlayerColor.black,
-      new Position(2, 7)
-    );
-    pieces[27] = new Piece(
-      PieceType.queen,
-      PlayerColor.black,
-      new Position(3, 7)
-    );
-    pieces[28] = new Piece(
-      PieceType.king,
-      PlayerColor.black,
-      new Position(4, 7)
-    );
-    pieces[29] = new Piece(
-      PieceType.bishop,
-      PlayerColor.black,
-      new Position(5, 7)
-    );
-    pieces[30] = new Piece(
-      PieceType.knight,
-      PlayerColor.black,
-      new Position(6, 7)
-    );
-    pieces[31] = new Piece(
-      PieceType.rock,
-      PlayerColor.black,
-      new Position(7, 7)
-    );
-    return pieces;
+    return this.pacoBoard.pieces.map(chessPiece => new Piece(chessPiece));
   }
   piecesAt(p: Position): Array<Piece> {
     return this.pieces.filter(piece => piece.isAt(p));
@@ -323,9 +226,9 @@ class Board extends PIXI.Container {
   }
 }
 
-function loadPieceSprite(piece: PieceType, color: PlayerColor): PIXI.Sprite {
-  if (color == PlayerColor.white) {
-    switch (piece) {
+function loadPieceSprite(chessPiece: ChessPiece): PIXI.Sprite {
+  if (chessPiece.color == PlayerColor.white) {
+    switch (chessPiece.type) {
       case PieceType.pawn:
         return PIXI.Sprite.fromImage(whitePawnFile, undefined, 1);
       case PieceType.rock:
@@ -339,10 +242,10 @@ function loadPieceSprite(piece: PieceType, color: PlayerColor): PIXI.Sprite {
       case PieceType.king:
         return PIXI.Sprite.fromImage(whiteKingFile, undefined, 1);
       default:
-        return piece; // Here piece is of type never, so we may return it as a Pixi.Sprite
+        return chessPiece.type; // Here piece is of type never, so we may return it as a Pixi.Sprite
     }
   } else {
-    switch (piece) {
+    switch (chessPiece.type) {
       case PieceType.pawn:
         return PIXI.Sprite.fromImage(blackPawnFile, undefined, 1);
       case PieceType.rock:
@@ -356,7 +259,7 @@ function loadPieceSprite(piece: PieceType, color: PlayerColor): PIXI.Sprite {
       case PieceType.king:
         return PIXI.Sprite.fromImage(blackKingFile, undefined, 1);
       default:
-        return piece; // Here piece is of type never, so we may return it as a Pixi.Sprite
+        return chessPiece.type; // Here piece is of type never, so we may return it as a Pixi.Sprite
     }
   }
 }
@@ -374,16 +277,13 @@ enum PieceState {
  */
 class Piece {
   public sprite: PIXI.Sprite;
-  private _position: Position;
   public _state: PieceState = PieceState.alone;
-  constructor(
-    readonly type: PieceType,
-    readonly color: PlayerColor,
-    position: Position
-  ) {
-    this.sprite = loadPieceSprite(type, color);
-    this._position = position;
+  constructor(readonly data: ChessPiece) {
+    this.sprite = loadPieceSprite(data);
     this.recalculatePosition();
+  }
+  get color(): PlayerColor {
+    return this.data.color;
   }
   get offset(): Vector {
     if (this.state == PieceState.alone) {
@@ -420,19 +320,19 @@ class Piece {
     this.recalculatePosition();
   }
   get position(): Position {
-    return this._position;
+    return this.data.position;
   }
   set position(p: Position) {
-    this._position = p;
+    this.data.position = p;
     this.recalculatePosition();
   }
   recalculatePosition() {
-    const pos = addVector(pixelPosition(this._position), this.offset);
+    const pos = pixelPosition(this.data.position).add(this.offset);
     this.sprite.x = pos.x;
     this.sprite.y = pos.y;
   }
   isAt(p: Position): any {
-    return this._position.x == p.x && this._position.y == p.y;
+    return this.data.position.x == p.x && this.data.position.y == p.y;
   }
 }
 
@@ -441,7 +341,7 @@ class Pair {
     this.assertIntegrity();
   }
   assertIntegrity() {
-    if (!samePosition(this.whitePiece.position, this.blackPiece.position)) {
+    if (!this.whitePiece.position.equals(this.blackPiece.position)) {
       throw new Error("Pieces of a pair must share of Position.");
     }
   }
