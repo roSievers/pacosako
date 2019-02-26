@@ -176,14 +176,36 @@ class Board extends PIXI.Container {
         if (piecesOnClickedTile.length == 1) {
           this.onDanceCommand(this.highlight, piecesOnClickedTile[0]);
         } else {
-          this.clearHighlight();
+          this.onChainCommand(this.highlight, piecesOnClickedTile);
         }
       } else {
         this.clearHighlight();
       }
     }
   }
-  onDanceCommand(highlightedPiece: Piece, partner: Piece): any {
+  /**
+   * Dancing a piece into a Pair starts or extends a chain.
+   *
+   * @param highlight
+   * @param piecesOnClickedTile Must contain exactly two entries.
+   * TODO: Change the type of piecesOnClickedTile to Pair.
+   *       This requires some refactoring of the calling method.
+   */
+  onChainCommand(highlight: Piece, piecesOnClickedTile: Piece[]) {
+    // Select the piece of same color from the pair.
+    let freePiece = piecesOnClickedTile.find(
+      piece => piece.color == highlight.color
+    );
+    if (!freePiece) {
+      throw new Error("This code path should be inaccessible.");
+    }
+    this.tiles.get(highlight.position).clearHighlight();
+    highlight.position = freePiece.position;
+    highlight.state = PieceState.takingOver;
+    freePiece.state = PieceState.leavingUnion;
+    this.highlight = freePiece;
+  }
+  onDanceCommand(highlightedPiece: Piece, partner: Piece) {
     if (highlightedPiece.color != partner.color) {
       highlightedPiece.state = PieceState.dancing;
       partner.state = PieceState.dancing;
@@ -199,7 +221,7 @@ class Board extends PIXI.Container {
    *
    * This function should however check, if the move is legal.
    */
-  onMoveCommand(highlightedPieces: Piece | Pair, target: Position): any {
+  onMoveCommand(highlightedPieces: Piece | Pair, target: Position) {
     // TODO: Check if this is a legal move.
 
     this.clearHighlight(); // Here it is important that we clear before we move.
@@ -303,7 +325,20 @@ class Piece {
         return { x: -20, y: 0 };
       }
     }
-    // TODO: takingOver & united
+    if (this.state == PieceState.takingOver) {
+      if (this.color == PlayerColor.white) {
+        return { x: 10, y: 10 };
+      } else {
+        return { x: -10, y: 10 };
+      }
+    }
+    if (this.state == PieceState.leavingUnion) {
+      if (this.color == PlayerColor.white) {
+        return { x: 30, y: -10 };
+      } else {
+        return { x: -30, y: -10 };
+      }
+    }
     return { x: 0, y: 0 };
   }
   get state(): PieceState {
