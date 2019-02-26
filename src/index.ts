@@ -7,7 +7,9 @@ import {
   PieceType,
   isEvenPosition,
   samePosition,
-  addPosition
+  addPosition,
+  Vector,
+  addVector
 } from "./basicTypes";
 
 // Placeholder Graphics from https://openclipart.org/user-detail/akiross
@@ -132,30 +134,99 @@ class Board extends PIXI.Container {
     let pieces: Array<Piece> = new Array(32);
     // All pawns
     for (let x = 0; x < 8; x++) {
-      pieces[x] = new Piece(PieceType.pawn, PlayerColor.white, { x, y: 1 });
-      pieces[x + 16] = new Piece(PieceType.pawn, PlayerColor.black, {
-        x,
-        y: 6
-      });
+      pieces[x] = new Piece(
+        PieceType.pawn,
+        PlayerColor.white,
+        new Position(x, 1)
+      );
+      pieces[x + 16] = new Piece(
+        PieceType.pawn,
+        PlayerColor.black,
+        new Position(x, 6)
+      );
     }
     // White pieces
-    pieces[8] = new Piece(PieceType.rock, PlayerColor.white, { x: 0, y: 0 });
-    pieces[9] = new Piece(PieceType.knight, PlayerColor.white, { x: 1, y: 0 });
-    pieces[10] = new Piece(PieceType.bishop, PlayerColor.white, { x: 2, y: 0 });
-    pieces[11] = new Piece(PieceType.queen, PlayerColor.white, { x: 3, y: 0 });
-    pieces[12] = new Piece(PieceType.king, PlayerColor.white, { x: 4, y: 0 });
-    pieces[13] = new Piece(PieceType.bishop, PlayerColor.white, { x: 5, y: 0 });
-    pieces[14] = new Piece(PieceType.knight, PlayerColor.white, { x: 6, y: 0 });
-    pieces[15] = new Piece(PieceType.rock, PlayerColor.white, { x: 7, y: 0 });
+    pieces[8] = new Piece(
+      PieceType.rock,
+      PlayerColor.white,
+      new Position(0, 0)
+    );
+    pieces[9] = new Piece(
+      PieceType.knight,
+      PlayerColor.white,
+      new Position(1, 0)
+    );
+    pieces[10] = new Piece(
+      PieceType.bishop,
+      PlayerColor.white,
+      new Position(2, 0)
+    );
+    pieces[11] = new Piece(
+      PieceType.queen,
+      PlayerColor.white,
+      new Position(3, 0)
+    );
+    pieces[12] = new Piece(
+      PieceType.king,
+      PlayerColor.white,
+      new Position(4, 0)
+    );
+    pieces[13] = new Piece(
+      PieceType.bishop,
+      PlayerColor.white,
+      new Position(5, 0)
+    );
+    pieces[14] = new Piece(
+      PieceType.knight,
+      PlayerColor.white,
+      new Position(6, 0)
+    );
+    pieces[15] = new Piece(
+      PieceType.rock,
+      PlayerColor.white,
+      new Position(7, 0)
+    );
     // Black pieces
-    pieces[24] = new Piece(PieceType.rock, PlayerColor.black, { x: 0, y: 7 });
-    pieces[25] = new Piece(PieceType.knight, PlayerColor.black, { x: 1, y: 7 });
-    pieces[26] = new Piece(PieceType.bishop, PlayerColor.black, { x: 2, y: 7 });
-    pieces[27] = new Piece(PieceType.queen, PlayerColor.black, { x: 3, y: 7 });
-    pieces[28] = new Piece(PieceType.king, PlayerColor.black, { x: 4, y: 7 });
-    pieces[29] = new Piece(PieceType.bishop, PlayerColor.black, { x: 5, y: 7 });
-    pieces[30] = new Piece(PieceType.knight, PlayerColor.black, { x: 6, y: 7 });
-    pieces[31] = new Piece(PieceType.rock, PlayerColor.black, { x: 7, y: 7 });
+    pieces[24] = new Piece(
+      PieceType.rock,
+      PlayerColor.black,
+      new Position(0, 7)
+    );
+    pieces[25] = new Piece(
+      PieceType.knight,
+      PlayerColor.black,
+      new Position(1, 7)
+    );
+    pieces[26] = new Piece(
+      PieceType.bishop,
+      PlayerColor.black,
+      new Position(2, 7)
+    );
+    pieces[27] = new Piece(
+      PieceType.queen,
+      PlayerColor.black,
+      new Position(3, 7)
+    );
+    pieces[28] = new Piece(
+      PieceType.king,
+      PlayerColor.black,
+      new Position(4, 7)
+    );
+    pieces[29] = new Piece(
+      PieceType.bishop,
+      PlayerColor.black,
+      new Position(5, 7)
+    );
+    pieces[30] = new Piece(
+      PieceType.knight,
+      PlayerColor.black,
+      new Position(6, 7)
+    );
+    pieces[31] = new Piece(
+      PieceType.rock,
+      PlayerColor.black,
+      new Position(7, 7)
+    );
     return pieces;
   }
   piecesAt(p: Position): Array<Piece> {
@@ -314,32 +385,32 @@ class Piece {
     this._position = position;
     this.recalculatePosition();
   }
-  get offset(): Position {
+  get offset(): Vector {
     if (this.state == PieceState.alone) {
-      return { x: 0, y: 0 };
+      return Vector.zero;
     }
     if (this.state == PieceState.dancing) {
       if (this.color == PlayerColor.white) {
-        return { x: 20, y: 0 };
+        return Vector.x(20);
       } else {
-        return { x: -20, y: 0 };
+        return Vector.x(-20);
       }
     }
     if (this.state == PieceState.takingOver) {
       if (this.color == PlayerColor.white) {
-        return { x: 10, y: 10 };
+        return new Vector(10, 10);
       } else {
-        return { x: -10, y: 10 };
+        return new Vector(-10, 10);
       }
     }
     if (this.state == PieceState.leavingUnion) {
       if (this.color == PlayerColor.white) {
-        return { x: 30, y: -10 };
+        return new Vector(30, -10);
       } else {
-        return { x: -30, y: -10 };
+        return new Vector(-30, -10);
       }
     }
-    return { x: 0, y: 0 };
+    return Vector.zero;
   }
   get state(): PieceState {
     return this._state;
@@ -356,7 +427,7 @@ class Piece {
     this.recalculatePosition();
   }
   recalculatePosition() {
-    const pos = addPosition(pixelPosition(this._position), this.offset);
+    const pos = addVector(pixelPosition(this._position), this.offset);
     this.sprite.x = pos.x;
     this.sprite.y = pos.y;
   }
@@ -387,8 +458,8 @@ class Pair {
 /**
  * Calculates the screen position of a tile position relative to the board.
  */
-function pixelPosition(p: Position): Position {
-  return { x: 100 * p.x, y: 700 - 100 * p.y };
+function pixelPosition(p: Position): Vector {
+  return new Vector(100 * p.x, 700 - 100 * p.y);
 }
 
 app.stage.addChild(boardBackground());

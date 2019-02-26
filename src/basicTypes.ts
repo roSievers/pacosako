@@ -1,5 +1,3 @@
-import { PositionalAudio } from "three";
-
 // basicTypes.ts
 
 /**
@@ -33,28 +31,65 @@ export enum TileColor {
 }
 
 /**
- * The Position interface expresses a position on the board. Both x and y
- * should be in the set {0, 1, .., 7}.
+ * The Position class expresses a position on the board. Both x and y
+ * must be in the set {0, 1, .., 7}. A Position is immutable.
  */
-export interface Position {
-  x: number;
-  y: number;
+export class Position {
+  constructor(private _x: number, private _y: number) {
+    if (_x < 0 || 7 < _x || _y < 0 || 7 < _y) {
+      throw new Error("Can't initialize Position with x=${x}, y=${y}.");
+    }
+  }
+  get x(): number {
+    return this._x;
+  }
+  get y(): number {
+    return this._y;
+  }
+}
+
+/**
+ * The Vector class expresses an immutable pair of numbers x, y.
+ */
+export class Vector {
+  constructor(private _x: number, private _y: number) {}
+  get x(): number {
+    return this._x;
+  }
+  get y(): number {
+    return this._y;
+  }
+  /** Returns a new zero vector. */
+  static get zero(): Vector {
+    return new Vector(0, 0);
+  }
+  /** Returns a new vector with the given x and y = 0. */
+  static x(_x: number): Vector {
+    return new Vector(_x, 0);
+  }
+  /** Returns a new vector with x = 0 and the given y. */
+  static y(_y: number): Vector {
+    return new Vector(0, _y);
+  }
 }
 
 /**
  * Helper function for coloring the tiles.
  * @param p
  */
-export function isEvenPosition(p: Position) {
+export function isEvenPosition(p: Position): boolean {
   return (p.x + p.y) % 2 == 0;
 }
 
-export function samePosition(p1: Position, p2: Position) {
+export function samePosition(p1: Position, p2: Position): boolean {
   return p1.x == p2.x && p1.y == p2.y;
 }
 
-export function addPosition(p1: Position, p2: Position) {
-  return { x: p1.x + p2.x, y: p1.y + p2.y };
+export function addPosition(p1: Position, p2: Position): Position {
+  return new Position(p1.x + p2.x, p1.y + p2.y);
+}
+export function addVector(p1: Vector, p2: Vector) {
+  return new Vector(p1.x + p2.x, p1.y + p2.y);
 }
 
 /**
@@ -76,7 +111,7 @@ export class BoardMap<T> {
     for (let x = 0; x < 8; x++) {
       this.values[x] = new Array(8);
       for (let y = 0; y < 8; y++) {
-        this.values[x][y] = init({ x, y });
+        this.values[x][y] = init(new Position(x, y));
       }
     }
   }
@@ -95,7 +130,7 @@ export class BoardMap<T> {
   public forEach(f: (p: Position, v: T, map: BoardMap<T>) => any) {
     for (let x = 0; x < 8; x++) {
       for (let y = 0; y < 8; y++) {
-        f({ x, y }, this.get({ x, y }), this);
+        f(new Position(x, y), this.get(new Position(x, y)), this);
       }
     }
   }
