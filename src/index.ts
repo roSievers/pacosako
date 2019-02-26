@@ -289,7 +289,8 @@ class Piece {
     position: Position
   ) {
     this.sprite = loadPieceSprite(type, color);
-    this.position = position;
+    this._position = position;
+    this.recalculatePosition();
   }
   get offset(): Position {
     if (this.state == PieceState.alone) {
