@@ -7,7 +7,7 @@ import {
   PieceType,
   Vector
 } from "./basicTypes";
-import { PacoBoard, ChessPiece } from "./paco";
+import { PacoBoard, ChessPiece, ChessPair } from "./paco";
 
 // Placeholder Graphics from https://openclipart.org/user-detail/akiross
 // TODO: Use a Tileset
@@ -112,13 +112,13 @@ class Tile extends PIXI.Graphics {
 
 class Board extends PIXI.Container {
   /** Represents the piece that is currently held by the player. */
-  private highlight: null | VisualPiece | VisualPair = null;
+  private highlight: null | ChessPiece | ChessPair = null;
   /** The tiles which make up the board. */
   private readonly tiles: BoardMap<Tile>;
   /** Internal representation of the Board. */
   private pacoBoard: PacoBoard = new PacoBoard();
   /** A flat list of all pieces. They remember their own position. */
-  private readonly pieces: Array<VisualPiece> = this.createPieces();
+  private readonly pieces: Map<ChessPiece, VisualPiece> = this.createPieces();
   constructor() {
     super();
 
@@ -129,11 +129,22 @@ class Board extends PIXI.Container {
 
     this.on("mousedown", () => console.log("testing"));
   }
-  createPieces(): Array<VisualPiece> {
-    return this.pacoBoard.pieces.map(chessPiece => new VisualPiece(chessPiece));
+  private createPieces(): Map<ChessPiece, VisualPiece> {
+    // Type hint is due to https://github.com/Microsoft/TypeScript/issues/8936
+    return new Map<ChessPiece, VisualPiece>(
+      this.pacoBoard.pieces.map(
+        chessPiece =>
+          [chessPiece, new VisualPiece(chessPiece)] as [ChessPiece, VisualPiece]
+      )
+    );
   }
-  piecesAt(p: Position): Array<VisualPiece> {
-    return this.pieces.filter(piece => piece.isAt(p));
+  public getVisual(abstract: ChessPiece): VisualPiece {
+    let visual = this.pieces.get(abstract);
+    if (visual != undefined) {
+      return visual;
+    } else {
+      throw new Error("Chess Piece is not on Board.");
+    }
   }
   /**
    * This event is triggered, when any tile is clicked. Based on its state,
@@ -143,12 +154,13 @@ class Board extends PIXI.Container {
     if (this.highlight == null) {
       this.onBeginSelection(p);
     } else {
-      const piecesOnClickedTile: Array<VisualPiece> = this.piecesAt(p);
-      if (piecesOnClickedTile.length == 0) {
+      const piecesOnClickedTile = this.pacoBoard.at(p);
+      // const piecesOnClickedTile: Array<VisualPiece> = this.piecesAt(p);
+      if (piecesOnClickedTile == null) {
         this.onMoveCommand(this.highlight, p);
-      } else if (this.highlight instanceof VisualPiece) {
-        if (piecesOnClickedTile.length == 1) {
-          this.onDanceCommand(this.highlight, piecesOnClickedTile[0]);
+      } else if (this.highlight instanceof ChessPiece) {
+        if (piecesOnClickedTile instanceof ChessPiece) {
+          this.onDanceCommand(this.highlight, piecesOnClickedTile);
         } else {
           this.onChainCommand(this.highlight, piecesOnClickedTile);
         }
@@ -165,24 +177,22 @@ class Board extends PIXI.Container {
    * TODO: Change the type of piecesOnClickedTile to Pair.
    *       This requires some refactoring of the calling method.
    */
-  onChainCommand(highlight: VisualPiece, piecesOnClickedTile: VisualPiece[]) {
+  onChainCommand(highlight: ChessPiece, piecesOnClickedTile: ChessPair) {
     // Select the piece of same color from the pair.
-    let freePiece = piecesOnClickedTile.find(
-      piece => piece.color == highlight.color
-    );
+    let freePiece = piecesOnClickedTile.ofColor(highlight.color);
     if (!freePiece) {
       throw new Error("This code path should be inaccessible.");
     }
     this.tiles.get(highlight.position).clearHighlight();
     highlight.position = freePiece.position;
-    highlight.state = PieceState.takingOver;
-    freePiece.state = PieceState.leavingUnion;
+    this.getVisual(highlight).state = PieceState.takingOver;
+    this.getVisual(freePiece).state = PieceState.leavingUnion;
     this.highlight = freePiece;
   }
-  onDanceCommand(highlightedPiece: VisualPiece, partner: VisualPiece) {
+  onDanceCommand(highlightedPiece: ChessPiece, partner: ChessPiece) {
     if (highlightedPiece.color != partner.color) {
-      highlightedPiece.state = PieceState.dancing;
-      partner.state = PieceState.dancing;
+      this.getVisual(highlightedPiece).state = PieceState.dancing;
+      this.getVisual(partner).state = PieceState.dancing;
       this.onMoveCommand(highlightedPiece, partner.position);
     } else {
       this.clearHighlight();
@@ -195,22 +205,18 @@ class Board extends PIXI.Container {
    *
    * This function should however check, if the move is legal.
    */
-  onMoveCommand(highlightedPieces: VisualPiece | VisualPair, target: Position) {
+  onMoveCommand(highlightedPieces: ChessPiece | ChessPair, target: Position) {
     // TODO: Check if this is a legal move.
 
     this.clearHighlight(); // Here it is important that we clear before we move.
     highlightedPieces.position = target;
   }
-  private onBeginSelection(p: Position): any {
-    const piecesOnClickedTile: Array<VisualPiece> = this.piecesAt(p);
-    if (piecesOnClickedTile.length == 1) {
-      this.setHighlight(piecesOnClickedTile[0]);
+  private onBeginSelection(p: Position) {
+    const piecesOnClickedTile = this.pacoBoard.at(p);
+    if (piecesOnClickedTile == null) {
+      return;
     }
-    if (piecesOnClickedTile.length == 2) {
-      this.setHighlight(
-        new VisualPair(piecesOnClickedTile[0], piecesOnClickedTile[1])
-      );
-    }
+    this.setHighlight(piecesOnClickedTile);
   }
   clearHighlight() {
     // TODO: clean up calls to this function.
@@ -220,7 +226,7 @@ class Board extends PIXI.Container {
     this.tiles.get(this.highlight.position).clearHighlight();
     this.highlight = null;
   }
-  setHighlight(highlightedPieces: VisualPiece | VisualPair) {
+  setHighlight(highlightedPieces: ChessPiece | ChessPair) {
     this.tiles.get(highlightedPieces.position).setHighlight();
     this.highlight = highlightedPieces;
   }
@@ -280,6 +286,7 @@ class VisualPiece {
   public _state: PieceState = PieceState.alone;
   constructor(readonly data: ChessPiece) {
     this.sprite = loadPieceSprite(data);
+    data.positionObs.subscribe(_ => this.recalculatePosition());
     this.recalculatePosition();
   }
   get color(): PlayerColor {
@@ -319,13 +326,6 @@ class VisualPiece {
     this._state = newState;
     this.recalculatePosition();
   }
-  get position(): Position {
-    return this.data.position;
-  }
-  set position(p: Position) {
-    this.data.position = p;
-    this.recalculatePosition();
-  }
   recalculatePosition() {
     const pos = pixelPosition(this.data.position).add(this.offset);
     this.sprite.x = pos.x;
@@ -333,25 +333,6 @@ class VisualPiece {
   }
   isAt(p: Position): any {
     return this.data.position.x == p.x && this.data.position.y == p.y;
-  }
-}
-
-class VisualPair {
-  constructor(public whitePiece: VisualPiece, public blackPiece: VisualPiece) {
-    this.assertIntegrity();
-  }
-  assertIntegrity() {
-    if (!this.whitePiece.position.equals(this.blackPiece.position)) {
-      throw new Error("Pieces of a pair must share of Position.");
-    }
-  }
-  get position(): Position {
-    this.assertIntegrity();
-    return this.whitePiece.position;
-  }
-  set position(p: Position) {
-    this.whitePiece.position = p;
-    this.blackPiece.position = p;
   }
 }
 

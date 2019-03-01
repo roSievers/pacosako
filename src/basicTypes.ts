@@ -75,10 +75,6 @@ export class Vector {
   }
 }
 
-export function addPosition(p1: Position, p2: Position): Position {
-  return new Position(p1.x + p2.x, p1.y + p2.y);
-}
-
 /**
  * Helper function to turn an internal position {x:5, y:2} into a human readable
  * position "f3".
@@ -122,3 +118,28 @@ export class BoardMap<T> {
     }
   }
 }
+
+/**
+ * A very basic implementation of observables.
+ */
+export class Observable<T> {
+  private subscribers: Array<Observer<T>> = new Array();
+  constructor(private _value: T) {}
+  get value() {
+    return this._value;
+  }
+  set value(newValue: T) {
+    this._value = newValue;
+    this.subscribers.forEach(observer => {
+      observer(newValue);
+    });
+  }
+  subscribe(observer: Observer<T>) {
+    this.subscribers.push(observer);
+  }
+}
+
+/**
+ * An Observer<T> is just a function that gets called on change.
+ */
+export type Observer<T> = (newValue: T) => any;
