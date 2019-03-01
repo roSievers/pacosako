@@ -112,13 +112,13 @@ class Tile extends PIXI.Graphics {
 
 class Board extends PIXI.Container {
   /** Represents the piece that is currently held by the player. */
-  private highlight: null | Piece | Pair = null;
+  private highlight: null | VisualPiece | VisualPair = null;
   /** The tiles which make up the board. */
   private readonly tiles: BoardMap<Tile>;
   /** Internal representation of the Board. */
   private pacoBoard: PacoBoard = new PacoBoard();
   /** A flat list of all pieces. They remember their own position. */
-  private readonly pieces: Array<Piece> = this.createPieces();
+  private readonly pieces: Array<VisualPiece> = this.createPieces();
   constructor() {
     super();
 
@@ -129,10 +129,10 @@ class Board extends PIXI.Container {
 
     this.on("mousedown", () => console.log("testing"));
   }
-  createPieces(): Array<Piece> {
-    return this.pacoBoard.pieces.map(chessPiece => new Piece(chessPiece));
+  createPieces(): Array<VisualPiece> {
+    return this.pacoBoard.pieces.map(chessPiece => new VisualPiece(chessPiece));
   }
-  piecesAt(p: Position): Array<Piece> {
+  piecesAt(p: Position): Array<VisualPiece> {
     return this.pieces.filter(piece => piece.isAt(p));
   }
   /**
@@ -143,10 +143,10 @@ class Board extends PIXI.Container {
     if (this.highlight == null) {
       this.onBeginSelection(p);
     } else {
-      const piecesOnClickedTile: Array<Piece> = this.piecesAt(p);
+      const piecesOnClickedTile: Array<VisualPiece> = this.piecesAt(p);
       if (piecesOnClickedTile.length == 0) {
         this.onMoveCommand(this.highlight, p);
-      } else if (this.highlight instanceof Piece) {
+      } else if (this.highlight instanceof VisualPiece) {
         if (piecesOnClickedTile.length == 1) {
           this.onDanceCommand(this.highlight, piecesOnClickedTile[0]);
         } else {
@@ -165,7 +165,7 @@ class Board extends PIXI.Container {
    * TODO: Change the type of piecesOnClickedTile to Pair.
    *       This requires some refactoring of the calling method.
    */
-  onChainCommand(highlight: Piece, piecesOnClickedTile: Piece[]) {
+  onChainCommand(highlight: VisualPiece, piecesOnClickedTile: VisualPiece[]) {
     // Select the piece of same color from the pair.
     let freePiece = piecesOnClickedTile.find(
       piece => piece.color == highlight.color
@@ -179,7 +179,7 @@ class Board extends PIXI.Container {
     freePiece.state = PieceState.leavingUnion;
     this.highlight = freePiece;
   }
-  onDanceCommand(highlightedPiece: Piece, partner: Piece) {
+  onDanceCommand(highlightedPiece: VisualPiece, partner: VisualPiece) {
     if (highlightedPiece.color != partner.color) {
       highlightedPiece.state = PieceState.dancing;
       partner.state = PieceState.dancing;
@@ -195,20 +195,20 @@ class Board extends PIXI.Container {
    *
    * This function should however check, if the move is legal.
    */
-  onMoveCommand(highlightedPieces: Piece | Pair, target: Position) {
+  onMoveCommand(highlightedPieces: VisualPiece | VisualPair, target: Position) {
     // TODO: Check if this is a legal move.
 
     this.clearHighlight(); // Here it is important that we clear before we move.
     highlightedPieces.position = target;
   }
   private onBeginSelection(p: Position): any {
-    const piecesOnClickedTile: Array<Piece> = this.piecesAt(p);
+    const piecesOnClickedTile: Array<VisualPiece> = this.piecesAt(p);
     if (piecesOnClickedTile.length == 1) {
       this.setHighlight(piecesOnClickedTile[0]);
     }
     if (piecesOnClickedTile.length == 2) {
       this.setHighlight(
-        new Pair(piecesOnClickedTile[0], piecesOnClickedTile[1])
+        new VisualPair(piecesOnClickedTile[0], piecesOnClickedTile[1])
       );
     }
   }
@@ -220,7 +220,7 @@ class Board extends PIXI.Container {
     this.tiles.get(this.highlight.position).clearHighlight();
     this.highlight = null;
   }
-  setHighlight(highlightedPieces: Piece | Pair) {
+  setHighlight(highlightedPieces: VisualPiece | VisualPair) {
     this.tiles.get(highlightedPieces.position).setHighlight();
     this.highlight = highlightedPieces;
   }
@@ -275,7 +275,7 @@ enum PieceState {
  * Here Piece can't extend PIXI.Sprite, as we initialize the sprite via a
  * static function, not a constructor.
  */
-class Piece {
+class VisualPiece {
   public sprite: PIXI.Sprite;
   public _state: PieceState = PieceState.alone;
   constructor(readonly data: ChessPiece) {
@@ -336,8 +336,8 @@ class Piece {
   }
 }
 
-class Pair {
-  constructor(public whitePiece: Piece, public blackPiece: Piece) {
+class VisualPair {
+  constructor(public whitePiece: VisualPiece, public blackPiece: VisualPiece) {
     this.assertIntegrity();
   }
   assertIntegrity() {
