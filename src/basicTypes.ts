@@ -14,6 +14,17 @@ export enum PieceType {
 }
 
 /**
+ * Current state of the Piece. This describes the situation in which the piece
+ * is on its tile.
+ */
+export enum PieceState {
+  alone,
+  dancing,
+  takingOver,
+  leavingUnion
+}
+
+/**
  * The PlayerColor is either white or black.
  */
 export enum PlayerColor {

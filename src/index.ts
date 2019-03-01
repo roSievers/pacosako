@@ -5,7 +5,8 @@ import {
   TileColor,
   PlayerColor,
   PieceType,
-  Vector
+  Vector,
+  PieceState
 } from "./basicTypes";
 import { PacoBoard, ChessPiece, ChessPair } from "./paco";
 
@@ -112,7 +113,7 @@ class Tile extends PIXI.Graphics {
 
 class Board extends PIXI.Container {
   /** Represents the piece that is currently held by the player. */
-  private highlight: null | ChessPiece | ChessPair = null;
+  private _selection: Position | null = null;
   /** The tiles which make up the board. */
   private readonly tiles: BoardMap<Tile>;
   /** Internal representation of the Board. */
@@ -151,84 +152,43 @@ class Board extends PIXI.Container {
    * the Board decides which action to take.
    */
   public onClick(p: Position) {
-    if (this.highlight == null) {
+    if (this.selection == null) {
       this.onBeginSelection(p);
     } else {
-      const piecesOnClickedTile = this.pacoBoard.at(p);
-      // const piecesOnClickedTile: Array<VisualPiece> = this.piecesAt(p);
-      if (piecesOnClickedTile == null) {
-        this.onMoveCommand(this.highlight, p);
-      } else if (this.highlight instanceof ChessPiece) {
-        if (piecesOnClickedTile instanceof ChessPiece) {
-          this.onDanceCommand(this.highlight, piecesOnClickedTile);
-        } else {
-          this.onChainCommand(this.highlight, piecesOnClickedTile);
-        }
+      this.onCommandMove(this.selection, p);
+      if (this.pacoBoard.chainingPiece != null) {
+        this.selection = this.pacoBoard.chainingPiece.position;
       } else {
-        this.clearHighlight();
+        this.selection = null;
       }
     }
   }
-  /**
-   * Dancing a piece into a Pair starts or extends a chain.
-   *
-   * @param highlight
-   * @param piecesOnClickedTile Must contain exactly two entries.
-   * TODO: Change the type of piecesOnClickedTile to Pair.
-   *       This requires some refactoring of the calling method.
-   */
-  onChainCommand(highlight: ChessPiece, piecesOnClickedTile: ChessPair) {
-    // Select the piece of same color from the pair.
-    let freePiece = piecesOnClickedTile.ofColor(highlight.color);
-    if (!freePiece) {
-      throw new Error("This code path should be inaccessible.");
+  private onCommandMove(start: Position, target: Position) {
+    try {
+      this.pacoBoard.move(start, target);
+    } catch (error) {
+      simpleLog("Error while moving: " + error);
     }
-    this.tiles.get(highlight.position).clearHighlight();
-    highlight.position = freePiece.position;
-    this.getVisual(highlight).state = PieceState.takingOver;
-    this.getVisual(freePiece).state = PieceState.leavingUnion;
-    this.highlight = freePiece;
-  }
-  onDanceCommand(highlightedPiece: ChessPiece, partner: ChessPiece) {
-    if (highlightedPiece.color != partner.color) {
-      this.getVisual(highlightedPiece).state = PieceState.dancing;
-      this.getVisual(partner).state = PieceState.dancing;
-      this.onMoveCommand(highlightedPiece, partner.position);
-    } else {
-      this.clearHighlight();
-    }
-  }
-  /**
-   * Moves a piece to the target position without regard for pieces that are
-   * already present at the target position. Make sure that moving is ok,
-   * before you call this function.
-   *
-   * This function should however check, if the move is legal.
-   */
-  onMoveCommand(highlightedPieces: ChessPiece | ChessPair, target: Position) {
-    // TODO: Check if this is a legal move.
-
-    this.clearHighlight(); // Here it is important that we clear before we move.
-    highlightedPieces.position = target;
   }
   private onBeginSelection(p: Position) {
-    const piecesOnClickedTile = this.pacoBoard.at(p);
-    if (piecesOnClickedTile == null) {
-      return;
+    let legalMoves = this.pacoBoard.select(p);
+    if (legalMoves != null && legalMoves.length > 0) {
+      this.selection = p;
     }
-    this.setHighlight(piecesOnClickedTile);
   }
-  clearHighlight() {
-    // TODO: clean up calls to this function.
-    if (this.highlight == null) {
-      return;
+  get selection(): Position | null {
+    return this._selection;
+  }
+  set selection(newSelection: Position | null) {
+    // Clear old highlight, if there was one.
+    if (this._selection != null) {
+      this.tiles.get(this._selection).clearHighlight();
     }
-    this.tiles.get(this.highlight.position).clearHighlight();
-    this.highlight = null;
-  }
-  setHighlight(highlightedPieces: ChessPiece | ChessPair) {
-    this.tiles.get(highlightedPieces.position).setHighlight();
-    this.highlight = highlightedPieces;
+    this._selection = newSelection;
+    // Add new highlight, if there is one.
+    if (newSelection != null) {
+      this.tiles.get(newSelection).setHighlight();
+    }
   }
 }
 
@@ -270,47 +230,40 @@ function loadPieceSprite(chessPiece: ChessPiece): PIXI.Sprite {
   }
 }
 
-enum PieceState {
-  alone,
-  dancing,
-  takingOver,
-  leavingUnion
-}
-
 /**
  * Here Piece can't extend PIXI.Sprite, as we initialize the sprite via a
  * static function, not a constructor.
  */
 class VisualPiece {
   public sprite: PIXI.Sprite;
-  public _state: PieceState = PieceState.alone;
   constructor(readonly data: ChessPiece) {
     this.sprite = loadPieceSprite(data);
     data.positionObs.subscribe(_ => this.recalculatePosition());
+    data.stateObs.subscribe(_ => this.recalculatePosition());
     this.recalculatePosition();
   }
   get color(): PlayerColor {
     return this.data.color;
   }
   get offset(): Vector {
-    if (this.state == PieceState.alone) {
+    if (this.data.state == PieceState.alone) {
       return Vector.zero;
     }
-    if (this.state == PieceState.dancing) {
+    if (this.data.state == PieceState.dancing) {
       if (this.color == PlayerColor.white) {
         return Vector.x(20);
       } else {
         return Vector.x(-20);
       }
     }
-    if (this.state == PieceState.takingOver) {
+    if (this.data.state == PieceState.takingOver) {
       if (this.color == PlayerColor.white) {
         return new Vector(10, 10);
       } else {
         return new Vector(-10, 10);
       }
     }
-    if (this.state == PieceState.leavingUnion) {
+    if (this.data.state == PieceState.leavingUnion) {
       if (this.color == PlayerColor.white) {
         return new Vector(30, -10);
       } else {
@@ -318,13 +271,6 @@ class VisualPiece {
       }
     }
     return Vector.zero;
-  }
-  get state(): PieceState {
-    return this._state;
-  }
-  set state(newState: PieceState) {
-    this._state = newState;
-    this.recalculatePosition();
   }
   recalculatePosition() {
     const pos = pixelPosition(this.data.position).add(this.offset);

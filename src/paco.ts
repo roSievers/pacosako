@@ -1,13 +1,20 @@
 // Implements the core game logic of Paco Ŝako.
 // As "PacoSxako" does not look nice when spelled with "iks-sistemo",
 // this module is called paco.ts instead.
-import { Position, PlayerColor, PieceType, Observable } from "./basicTypes";
+import {
+  Position,
+  PlayerColor,
+  PieceType,
+  Observable,
+  PieceState
+} from "./basicTypes";
 
 /**
  * A ChessPiece is a data object which tracks its inherent properties
  * and its position.
  */
 export class ChessPiece {
+  public stateObs: Observable<PieceState> = new Observable(PieceState.alone);
   private _type: PieceType;
   public positionObs: Observable<Position>;
   constructor(
@@ -30,6 +37,12 @@ export class ChessPiece {
   }
   set position(newPosition: Position) {
     this.positionObs.value = newPosition;
+  }
+  get state(): PieceState {
+    return this.stateObs.value;
+  }
+  set state(newState: PieceState) {
+    this.stateObs.value = newState;
   }
   /**
    * This function promotes a pawn to a queen if possible.
@@ -104,10 +117,9 @@ export class PacoBoard {
    */
   public readonly pieces: Array<ChessPiece> = initEmptyBoard();
   /**
-   * The index of the piece held by the player. Only one piece can be held
-   * at a time. Moving a dancing piece carries its piece with it.
+   * The piece currently leaving a union without a defined target.
    */
-  private readonly hand: number | null = null;
+  private chaining: ChessPiece | null = null;
   /** Constructs a new board in initial position. */
   constructor() {}
   /**
@@ -124,19 +136,99 @@ export class PacoBoard {
    * @param p The position the user wants to select.
    */
   select(p: Position): Array<Position> | null {
-    // TODO: This function is lacking a propper implementation.
     if (this.at(p) == null) {
       return null;
     } else {
-      return new Array(0);
+      // TODO: This function is lacking a propper implementation.
+      return new Array(p);
     }
   }
-  /** Returns all pieces at the given position in an unstructured list. */
+  /**
+   * Moves the piece or pieces from the start to the target position.
+   * @param start `this.select(start)` must not be `null`.
+   * @param target must be an entry of `this.select(start)`
+   */
+  move(start: Position, target: Position) {
+    let legalMoves = this.select(start);
+    if (legalMoves == null || legalMoves.every(p => !p.equals(target))) {
+      // throw new Error("This move is not allowed.");
+    }
+    // Analize situation
+    if (this.chaining != null) {
+      // A chain is active, the chaining piece must move.
+      if (this.chaining.position.equals(start)) {
+        this.singleMove(this.chaining, target);
+        this._at(start).forEach(piece => (piece.state = PieceState.dancing));
+      } else {
+        throw new Error("A chain is active, move the chaining piece.");
+      }
+    } else {
+      let movingPieces = this.at(start);
+      if (movingPieces instanceof ChessPiece) {
+        // Moving a single piece works just as moving the chain piece
+        this.singleMove(movingPieces, target);
+      } else if (movingPieces instanceof ChessPair) {
+        this.pairMove(movingPieces, target);
+      } else {
+        throw new Error("There is no piece at the start position!");
+      }
+    }
+  }
+  /**
+   * This internal function moves a pair. This is only possible, when the target
+   * position is empty.
+   * @param movingPair The ChessPair being moved.
+   * @param target The target Position.
+   */
+  private pairMove(movingPair: ChessPair, target: Position) {
+    if (this.at(target) == null) {
+      movingPair.position = target;
+    } else {
+      throw new Error("Pairs may only be moved onto empty squares.");
+    }
+  }
+  /**
+   * This internal function moves a single piece. It does not matter whether
+   * the piece is from a chain or not.
+   * @param movingPiece The ChessPiece being moved.
+   * @param target The target Position.
+   */
+  private singleMove(movingPiece: ChessPiece, target: Position) {
+    let targetPieces = this.at(target);
+    if (targetPieces == null) {
+      // Empty target tile, the chain is over.
+      movingPiece.position = target;
+      movingPiece.state = PieceState.alone;
+      this.chaining = null;
+    } else if (targetPieces instanceof ChessPiece) {
+      // Single Target, verify color and move there. The chain is over.
+      if (movingPiece.color == targetPieces.color) {
+        throw new Error("Can't form a union from pieces with the same color.");
+      }
+      movingPiece.position = target;
+      movingPiece.state = PieceState.dancing;
+      targetPieces.state = PieceState.dancing;
+      this.chaining = null;
+    } else {
+      // Pair target, a chain continues or begins
+      movingPiece.position = target;
+      movingPiece.state = PieceState.takingOver;
+      this.chaining = targetPieces.ofColor(movingPiece.color);
+      this.chaining.state = PieceState.leavingUnion;
+    }
+  }
+  /**
+   * Returns all pieces at the given position in an unstructured list.
+   * Note that the `chaining` piece is excluded as it has a virtual position.
+   */
   private _at(p: Position): Array<ChessPiece> {
-    return this.pieces.filter(chessPiece => chessPiece.position.equals(p));
+    return this.pieces.filter(
+      chessPiece => chessPiece.position.equals(p) && chessPiece != this.chaining
+    );
   }
   /**
    * Returns all pieces at the given position in a structured form.
+   * Note that the `chaining` piece is excluded as it has a virtual position.
    * @throws May throw if the internal Board state is inconsistent.
    */
   public at(p: Position): null | ChessPiece | ChessPair {
@@ -157,6 +249,9 @@ export class PacoBoard {
           "There are more than 3 pieces on the same tile. This is forbidden."
         );
     }
+  }
+  get chainingPiece(): ChessPiece | null {
+    return this.chaining;
   }
 }
 
