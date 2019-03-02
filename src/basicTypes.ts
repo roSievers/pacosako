@@ -33,6 +33,18 @@ export enum PlayerColor {
 }
 
 /**
+ * Returns a PlayerColor as an english string.
+ * @param c
+ */
+export function colorName(c: PlayerColor): string {
+  if (c == PlayerColor.white) {
+    return "white";
+  } else {
+    return "black";
+  }
+}
+
+/**
  * The TileColor is either white or black. This is separate from the PlayerColor
  * as they are not related.
  */
@@ -145,8 +157,22 @@ export class Observable<T> {
       observer(newValue);
     });
   }
+  /**
+   * Add a new observer which will be notified of changes.
+   * If you need to initialize it with the current value use `subscribeAndFire`.
+   * @param observer
+   */
   subscribe(observer: Observer<T>) {
     this.subscribers.push(observer);
+  }
+  /**
+   * Add a new observer which will be notified of changes and
+   * immediately updated with the current value.
+   * @param observer
+   */
+  subscribeAndFire(observer: Observer<T>) {
+    this.subscribe(observer);
+    observer(this._value);
   }
 }
 

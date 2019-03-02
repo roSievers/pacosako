@@ -14,9 +14,11 @@ import {
  * and its position.
  */
 export class ChessPiece {
-  public stateObs: Observable<PieceState> = new Observable(PieceState.alone);
+  public readonly stateObs: Observable<PieceState> = new Observable(
+    PieceState.alone
+  );
   private _type: PieceType;
-  public positionObs: Observable<Position>;
+  public readonly positionObs: Observable<Position>;
   constructor(
     type: PieceType,
     public readonly color: PlayerColor,
@@ -26,7 +28,7 @@ export class ChessPiece {
     this._type = type;
   }
   /**
-   * Returns the type of a piece. This must be a propperty in order to
+   * Returns the type of a piece. This must be a property in order to
    * implement promotion while keeping this.type readonly.
    */
   get type() {
@@ -73,7 +75,7 @@ export class ChessPair {
   constructor(pieces: Array<ChessPiece>) {
     if (pieces.length != 2) {
       throw new Error(
-        "A Pair has exactly two members. Recieved: " + pieces.length
+        "A Pair has exactly two members. Received: " + pieces.length
       );
     }
     let whitePiece = pieces.find(piece => piece.color == PlayerColor.white);
@@ -120,6 +122,12 @@ export class PacoBoard {
    * The piece currently leaving a union without a defined target.
    */
   private chaining: ChessPiece | null = null;
+  /**
+   * Color of the current player
+   */
+  public readonly currentPlayer: Observable<PlayerColor> = new Observable(
+    PlayerColor.white
+  );
   /** Constructs a new board in initial position. */
   constructor() {}
   /**
@@ -136,11 +144,22 @@ export class PacoBoard {
    * @param p The position the user wants to select.
    */
   select(p: Position): Array<Position> | null {
-    if (this.at(p) == null) {
+    // TODO: This function is lacking a proper implementation.
+    const pieces = this.at(p);
+    if (this.chainingPiece != null) {
+      // When a chain is active, no new selection may be made.
       return null;
-    } else {
-      // TODO: This function is lacking a propper implementation.
+    } else if (
+      pieces instanceof ChessPiece &&
+      pieces.color == this.currentPlayer.value
+    ) {
       return new Array(p);
+    } else if (pieces instanceof ChessPair) {
+      // Pairs may always move.
+      return new Array(p);
+    } else {
+      // The Position is empty.
+      return null;
     }
   }
   /**
@@ -153,7 +172,7 @@ export class PacoBoard {
     if (legalMoves == null || legalMoves.every(p => !p.equals(target))) {
       // throw new Error("This move is not allowed.");
     }
-    // Analize situation
+    // Analyze situation
     if (this.chaining != null) {
       // A chain is active, the chaining piece must move.
       if (this.chaining.position.equals(start)) {
@@ -183,6 +202,7 @@ export class PacoBoard {
   private pairMove(movingPair: ChessPair, target: Position) {
     if (this.at(target) == null) {
       movingPair.position = target;
+      this.swapPlayerColor();
     } else {
       throw new Error("Pairs may only be moved onto empty squares.");
     }
@@ -200,6 +220,7 @@ export class PacoBoard {
       movingPiece.position = target;
       movingPiece.state = PieceState.alone;
       this.chaining = null;
+      this.swapPlayerColor();
     } else if (targetPieces instanceof ChessPiece) {
       // Single Target, verify color and move there. The chain is over.
       if (movingPiece.color == targetPieces.color) {
@@ -209,12 +230,20 @@ export class PacoBoard {
       movingPiece.state = PieceState.dancing;
       targetPieces.state = PieceState.dancing;
       this.chaining = null;
+      this.swapPlayerColor();
     } else {
       // Pair target, a chain continues or begins
       movingPiece.position = target;
       movingPiece.state = PieceState.takingOver;
       this.chaining = targetPieces.ofColor(movingPiece.color);
       this.chaining.state = PieceState.leavingUnion;
+    }
+  }
+  private swapPlayerColor() {
+    if (this.currentPlayer.value == PlayerColor.white) {
+      this.currentPlayer.value = PlayerColor.black;
+    } else {
+      this.currentPlayer.value = PlayerColor.white;
     }
   }
   /**

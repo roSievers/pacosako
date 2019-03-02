@@ -6,12 +6,13 @@ import {
   PlayerColor,
   PieceType,
   Vector,
-  PieceState
+  PieceState,
+  colorName
 } from "./basicTypes";
 import { PacoBoard, ChessPiece, ChessPair } from "./paco";
 
 // Placeholder Graphics from https://openclipart.org/user-detail/akiross
-// TODO: Use a Tileset
+// TODO: Use a tile set
 // TODO: Get graphics which look even better.
 const whitePawnFile: string = require("../assets/pawn-w.png");
 const whiteRockFile: string = require("../assets/rock-w.png");
@@ -117,7 +118,7 @@ class Board extends PIXI.Container {
   /** The tiles which make up the board. */
   private readonly tiles: BoardMap<Tile>;
   /** Internal representation of the Board. */
-  private pacoBoard: PacoBoard = new PacoBoard();
+  public readonly pacoBoard: PacoBoard = new PacoBoard();
   /** A flat list of all pieces. They remember their own position. */
   private readonly pieces: Map<ChessPiece, VisualPiece> = this.createPieces();
   constructor() {
@@ -294,3 +295,11 @@ let board = new Board();
 board.x = 50;
 board.y = 50;
 app.stage.addChild(board);
+
+// TODO: We should not directly change the DOM. Use a framework like Angular/Vue.
+board.pacoBoard.currentPlayer.subscribeAndFire(color => {
+  let label = document.getElementById("currentPlayer");
+  if (label != null) {
+    label.innerHTML = colorName(color);
+  }
+});
