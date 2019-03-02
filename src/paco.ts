@@ -6,7 +6,8 @@ import {
   PlayerColor,
   PieceType,
   Observable,
-  PieceState
+  PieceState,
+  oppositeColor
 } from "./basicTypes";
 
 /**
@@ -112,24 +113,31 @@ export class ChessPair {
   }
 }
 
+/**
+ * A Paco Ŝako board holding all the pieces and enforcing movement rules.
+ */
 export class PacoBoard {
   /**
    * The current state of all pieces. The objects modelling the pieces
    * will not change during runtime and can be used as keys in a map.
    */
   public readonly pieces: Array<ChessPiece> = initEmptyBoard();
+
   /**
    * The piece currently leaving a union without a defined target.
    */
   private chaining: ChessPiece | null = null;
+
   /**
    * Color of the current player
    */
   public readonly currentPlayer: Observable<PlayerColor> = new Observable(
     PlayerColor.white
   );
+
   /** Constructs a new board in initial position. */
   constructor() {}
+
   /**
    * Given a selection position p, PacoBoard.select(p) returns a list of all
    * legal moves or null, if a selection can not be made at the given position.
@@ -148,20 +156,27 @@ export class PacoBoard {
     const pieces = this.at(p);
     if (this.chainingPiece != null) {
       // When a chain is active, no new selection may be made.
-      return null;
+      // The selection must be at the current virtual position of
+      // the chaining piece.
+      if (this.chainingPiece.position.equals(p)) {
+        return chessMoves(this, this.chainingPiece);
+      } else {
+        return null;
+      }
     } else if (
       pieces instanceof ChessPiece &&
       pieces.color == this.currentPlayer.value
     ) {
-      return new Array(p);
+      return chessMoves(this, pieces);
     } else if (pieces instanceof ChessPair) {
       // Pairs may always move.
-      return new Array(p);
+      return chessMoves(this, pieces.ofColor(this.currentPlayer.value));
     } else {
       // The Position is empty.
       return null;
     }
   }
+
   /**
    * Moves the piece or pieces from the start to the target position.
    * @param start `this.select(start)` must not be `null`.
@@ -170,7 +185,7 @@ export class PacoBoard {
   move(start: Position, target: Position) {
     let legalMoves = this.select(start);
     if (legalMoves == null || legalMoves.every(p => !p.equals(target))) {
-      // throw new Error("This move is not allowed.");
+      throw new Error("This move is not allowed.");
     }
     // Analyze situation
     if (this.chaining != null) {
@@ -193,6 +208,7 @@ export class PacoBoard {
       }
     }
   }
+
   /**
    * This internal function moves a pair. This is only possible, when the target
    * position is empty.
@@ -207,6 +223,7 @@ export class PacoBoard {
       throw new Error("Pairs may only be moved onto empty squares.");
     }
   }
+
   /**
    * This internal function moves a single piece. It does not matter whether
    * the piece is from a chain or not.
@@ -239,13 +256,11 @@ export class PacoBoard {
       this.chaining.state = PieceState.leavingUnion;
     }
   }
+
   private swapPlayerColor() {
-    if (this.currentPlayer.value == PlayerColor.white) {
-      this.currentPlayer.value = PlayerColor.black;
-    } else {
-      this.currentPlayer.value = PlayerColor.white;
-    }
+    this.currentPlayer.apply(oppositeColor);
   }
+
   /**
    * Returns all pieces at the given position in an unstructured list.
    * Note that the `chaining` piece is excluded as it has a virtual position.
@@ -255,6 +270,7 @@ export class PacoBoard {
       chessPiece => chessPiece.position.equals(p) && chessPiece != this.chaining
     );
   }
+
   /**
    * Returns all pieces at the given position in a structured form.
    * Note that the `chaining` piece is excluded as it has a virtual position.
@@ -269,16 +285,49 @@ export class PacoBoard {
         return pieces[0];
       case 2:
         return new ChessPair(pieces);
-      case 3:
-        throw new Error(
-          "Selecting a tile with three pieces is not implemented."
-        );
       default:
         throw new Error(
-          "There are more than 3 pieces on the same tile. This is forbidden."
+          "There are more than two pieces on the same tile. This is forbidden."
         );
     }
   }
+
+  /**
+   * Returns pieces at the given position with the given color.
+   * The `chaining` piece is excluded as it has a virtual position.
+   * With this constraint, there is at most one such piece.
+   * @throws May throw if the internal Board state is inconsistent.
+   */
+  public atWithColor(p: Position, c: PlayerColor): ChessPiece | null {
+    let piece = this._at(p).filter(chessPiece => chessPiece.color == c);
+    if (piece.length == 0) {
+      return null;
+    } else if (piece.length == 1) {
+      return piece[0];
+    } else {
+      throw new Error(
+        "There is more one pieces of a color on the same tile. This is forbidden."
+      );
+    }
+  }
+
+  /**
+   * Determines wether a piece of color c may move into position p by moving,
+   * dancing or chaining.
+   * @param p
+   * @param c
+   */
+  public canMoveWithColor(p: Position, c: PlayerColor): boolean {
+    let pieces = this.at(p);
+    if (pieces == null) {
+      return true;
+    } else if (pieces instanceof ChessPair) {
+      return true;
+    } else {
+      return pieces.color != c;
+    }
+  }
+
   get chainingPiece(): ChessPiece | null {
     return this.chaining;
   }
@@ -295,6 +344,10 @@ const basePieceOrder: Array<PieceType> = [
   PieceType.rock
 ];
 
+/**
+ * Set up an empty Board according to PacoŜako rules.
+ * @returns An array containing exactly 32 entries.
+ */
 function initEmptyBoard(): ChessPiece[] {
   let pieces: Array<ChessPiece> = new Array(32);
   // All pawns
@@ -309,4 +362,191 @@ function initEmptyBoard(): ChessPiece[] {
     pieces[24 + x] = new ChessPiece(basePieceOrder[x], PlayerColor.black, b);
   }
   return pieces;
+}
+
+/**
+ * Calculate a list of all positions, where the piece may move according to
+ * chess rules.
+ * @param board
+ * @param p
+ */
+function chessMoves(
+  board: PacoBoard,
+  piece: ChessPiece
+): Array<Position> | null {
+  switch (piece.type) {
+    case PieceType.pawn:
+      return chessPawnMoves(board, piece);
+    case PieceType.rock:
+      return chessRockMoves(board, piece);
+    case PieceType.knight:
+      return chessKnightMoves(board, piece);
+    case PieceType.bishop:
+      return chessBishopMoves(board, piece);
+    case PieceType.queen:
+      return chessQueenMoves(board, piece);
+    case PieceType.king:
+      return chessKingMoves(board, piece);
+    default:
+      return piece.type; // The type is never.
+  }
+}
+
+function chessPawnMoves(board: PacoBoard, piece: ChessPiece): Array<Position> {
+  let forward = piece.color == PlayerColor.white ? 1 : -1;
+  let possibleMoves = new Array();
+  {
+    let strikeLeft = piece.position.add(-1, forward);
+    if (
+      strikeLeft != null &&
+      board.atWithColor(strikeLeft, oppositeColor(piece.color)) != null
+    ) {
+      possibleMoves.push(strikeLeft);
+    }
+  }
+  {
+    let strikeRight = piece.position.add(1, forward);
+    if (
+      strikeRight != null &&
+      board.atWithColor(strikeRight, oppositeColor(piece.color)) != null
+    ) {
+      possibleMoves.push(strikeRight);
+    }
+  }
+  {
+    let moveForward = piece.position.add(0, forward);
+    if (moveForward != null && board.at(moveForward) == null) {
+      possibleMoves.push(moveForward);
+      if (
+        (piece.position.y == 1 && piece.color == PlayerColor.white) ||
+        (piece.position.y == 6 && piece.color == PlayerColor.black)
+      ) {
+        let leapForward = piece.position.add(0, 2 * forward);
+        if (leapForward != null && board.at(leapForward) == null) {
+          possibleMoves.push(leapForward);
+        }
+      }
+    }
+  }
+  return possibleMoves;
+}
+
+function chessSlideMoves(
+  board: PacoBoard,
+  piece: ChessPiece,
+  direction: [number, number]
+): Array<Position> {
+  let possibleMoves = new Array();
+  let slide = piece.position.add(direction[0], direction[1]);
+  while (slide != null) {
+    let target = board.at(slide);
+    if (target instanceof ChessPair) {
+      possibleMoves.push(slide);
+      return possibleMoves;
+    } else if (target instanceof ChessPiece) {
+      if (target.color != piece.color) {
+        possibleMoves.push(slide);
+        return possibleMoves;
+      } else {
+        return possibleMoves;
+      }
+    } else {
+      possibleMoves.push(slide);
+      slide = slide.add(direction[0], direction[1]);
+    }
+  }
+
+  return possibleMoves;
+}
+
+function chessRockMoves(board: PacoBoard, piece: ChessPiece): Array<Position> {
+  let possibleMoves: Array<Position> = new Array();
+  const directions: Array<[number, number]> = [
+    [1, 0],
+    [0, 1],
+    [-1, 0],
+    [0, -1]
+  ];
+  directions.forEach(direction => {
+    possibleMoves = possibleMoves.concat(
+      chessSlideMoves(board, piece, direction)
+    );
+  });
+  return possibleMoves;
+}
+
+function chessKnightMoves(
+  board: PacoBoard,
+  piece: ChessPiece
+): Array<Position> {
+  const directions: Array<[number, number]> = [
+    [1, 2],
+    [2, 1],
+    [2, -1],
+    [1, -2],
+    [-1, -2],
+    [-2, -1],
+    [-2, 1],
+    [-1, 2]
+  ];
+  return directions
+    .map(direction => piece.position.add(direction[0], direction[1]))
+    .filter((p): p is Position => p != null)
+    .filter(p => board.canMoveWithColor(p, piece.color));
+}
+
+function chessBishopMoves(
+  board: PacoBoard,
+  piece: ChessPiece
+): Array<Position> {
+  let possibleMoves: Array<Position> = new Array();
+  const directions: Array<[number, number]> = [
+    [1, 1],
+    [-1, 1],
+    [1, -1],
+    [-1, -1]
+  ];
+  directions.forEach(direction => {
+    possibleMoves = possibleMoves.concat(
+      chessSlideMoves(board, piece, direction)
+    );
+  });
+  return possibleMoves;
+}
+
+function chessQueenMoves(board: PacoBoard, piece: ChessPiece): Array<Position> {
+  let possibleMoves: Array<Position> = new Array();
+  const directions: Array<[number, number]> = [
+    [1, 0],
+    [0, 1],
+    [-1, 0],
+    [0, -1],
+    [1, 1],
+    [-1, 1],
+    [1, -1],
+    [-1, -1]
+  ];
+  directions.forEach(direction => {
+    possibleMoves = possibleMoves.concat(
+      chessSlideMoves(board, piece, direction)
+    );
+  });
+  return possibleMoves;
+}
+
+function chessKingMoves(board: PacoBoard, piece: ChessPiece): Array<Position> {
+  const directions: Array<[number, number]> = [
+    [1, 0],
+    [0, 1],
+    [-1, 0],
+    [0, -1],
+    [1, 1],
+    [-1, 1],
+    [1, -1],
+    [-1, -1]
+  ];
+  return directions
+    .map(direction => piece.position.add(direction[0], direction[1]))
+    .filter((p): p is Position => p != null)
+    .filter(p => board.at(p) == null);
 }

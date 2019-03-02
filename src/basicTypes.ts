@@ -33,6 +33,18 @@ export enum PlayerColor {
 }
 
 /**
+ * Returns the opposite player color.
+ * @param c
+ */
+export function oppositeColor(c: PlayerColor): PlayerColor {
+  if (c == PlayerColor.white) {
+    return PlayerColor.black;
+  } else {
+    return PlayerColor.white;
+  }
+}
+
+/**
  * Returns a PlayerColor as an english string.
  * @param c
  */
@@ -72,6 +84,19 @@ export class Position {
    */
   get isEven(): boolean {
     return (this.x + this.y) % 2 == 0;
+  }
+  /**
+   * Adds an offset to the position and returns it, if it is on the board.
+   * Returns null instead of an invalid position.
+   * @param x
+   * @param y
+   */
+  public add(x: number, y: number): Position | null {
+    try {
+      return new Position(this.x + x, this.y + y);
+    } catch {
+      return null;
+    }
   }
 }
 
@@ -156,6 +181,12 @@ export class Observable<T> {
     this.subscribers.forEach(observer => {
       observer(newValue);
     });
+  }
+  /**
+   * Applies a function and notifies observers about the change.
+   */
+  apply(map: (v: T) => T) {
+    this.value = map(this.value);
   }
   /**
    * Add a new observer which will be notified of changes.
