@@ -9,7 +9,7 @@ import {
   PieceState,
   colorName
 } from "./basicTypes";
-import { PacoBoard, ChessPiece, ChessPair } from "./paco";
+import { PacoBoard, ChessPiece } from "./paco";
 
 // Placeholder Graphics from https://openclipart.org/user-detail/akiross
 // TODO: Use a tile set
