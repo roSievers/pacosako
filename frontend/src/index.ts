@@ -310,26 +310,47 @@ board.pacoBoard.currentPlayer.subscribeAndFire(color => {
 let jsonStore: string | null = null;
 
 function onStoreState() {
-  simpleLog("store state button clicked.");
   const json = JSON.stringify(board.pacoBoard.json);
-  simpleLog(`JSON: ${json}`);
-  jsonStore = json;
+
+  var request = new XMLHttpRequest();
+  request.open("POST", "/board", true);
+  request.setRequestHeader("Content-Type", "application/json");
+  request.send(json);
 }
 
 function onLoadState() {
-  if (jsonStore == null) {
-    simpleLog("No state stored.");
-    return;
-  }
-  try {
-    let object = JSON.parse(jsonStore);
-    let pacoBoard = PacoBoard.fromJson(object);
-    if (JSON.stringify(pacoBoard.json) == jsonStore) {
-      simpleLog(`Retrieved ${pacoBoard} from storage.`);
-      board.load(pacoBoard);
+  // Fire AJAX request for the board state and listen to result.
+
+  var request = new XMLHttpRequest();
+  request.open("GET", "/board", true);
+
+  request.onload = function() {
+    if (request.status >= 200 && request.status < 400) {
+      // Success!
+      simpleLog(`Received data: ${request.responseText}`);
+      var data = JSON.parse(request.responseText);
+      onLoadSuccess(data);
     } else {
-      simpleLog(`Error: Restoring yields ${JSON.stringify(pacoBoard.json)}`);
+      simpleLog(
+        `We reached our target server, but it returned an error: ${
+          request.status
+        }`
+      );
     }
+  };
+
+  request.onerror = function() {
+    simpleLog("There was a connection error of some sort.");
+  };
+
+  request.send();
+}
+
+function onLoadSuccess(data: any) {
+  try {
+    let pacoBoard = PacoBoard.fromJson(data);
+    simpleLog(`Retrieved ${pacoBoard} from storage.`);
+    board.load(pacoBoard);
   } catch (error) {
     simpleLog(`Error during deserialization: ${error}.`);
     throw error;
