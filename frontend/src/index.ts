@@ -7,33 +7,33 @@ import {
   PieceType,
   Vector,
   PieceState,
-  colorName
-} from "./basicTypes";
-import { PacoBoard, ChessPiece } from "./paco";
+  colorName,
+} from './basicTypes';
+import { PacoBoard, ChessPiece } from './paco';
 
 // Placeholder Graphics from https://openclipart.org/user-detail/akiross
 // TODO: Use a tile set
 // TODO: Get graphics which look even better.
-const whitePawnFile: string = require("../assets/pawn-w.png");
-const whiteRockFile: string = require("../assets/rock-w.png");
-const whiteKnightFile: string = require("../assets/knight-w.png");
-const whiteBishopFile: string = require("../assets/bishop-w.png");
-const whiteQueenFile: string = require("../assets/queen-w.png");
-const whiteKingFile: string = require("../assets/king-w.png");
-const blackPawnFile: string = require("../assets/pawn-b.png");
-const blackRockFile: string = require("../assets/rock-b.png");
-const blackKnightFile: string = require("../assets/knight-b.png");
-const blackBishopFile: string = require("../assets/bishop-b.png");
-const blackQueenFile: string = require("../assets/queen-b.png");
-const blackKingFile: string = require("../assets/king-b.png");
+const whitePawnFile: string = require('../assets/pawn-w.png');
+const whiteRockFile: string = require('../assets/rock-w.png');
+const whiteKnightFile: string = require('../assets/knight-w.png');
+const whiteBishopFile: string = require('../assets/bishop-w.png');
+const whiteQueenFile: string = require('../assets/queen-w.png');
+const whiteKingFile: string = require('../assets/king-w.png');
+const blackPawnFile: string = require('../assets/pawn-b.png');
+const blackRockFile: string = require('../assets/rock-b.png');
+const blackKnightFile: string = require('../assets/knight-b.png');
+const blackBishopFile: string = require('../assets/bishop-b.png');
+const blackQueenFile: string = require('../assets/queen-b.png');
+const blackKingFile: string = require('../assets/king-b.png');
 
-const outputContainer = document.getElementById("output");
+const outputContainer = document.getElementById('output');
 if (outputContainer) {
-  outputContainer.innerHTML = "";
+  outputContainer.innerHTML = '';
 }
 
 function simpleLog(text: string) {
-  let p = document.createElement("p");
+  let p = document.createElement('p');
   p.innerHTML = text;
   if (outputContainer) {
     outputContainer.appendChild(p);
@@ -45,13 +45,13 @@ const whiteTileColor = 0xccffcc;
 const blackTileHighlightColor = 0xaaaa66;
 const whiteTileHighlightColor = 0xddddcc;
 
-let pixiNode = document.getElementById("pixi");
+let pixiNode = document.getElementById('pixi');
 
 let app = new PIXI.Application(900, 900, {
-  backgroundColor: whiteTileColor
+  backgroundColor: whiteTileColor,
 });
 if (pixiNode) {
-  pixiNode.innerHTML = "";
+  pixiNode.innerHTML = '';
   pixiNode.appendChild(app.view);
 }
 
@@ -82,7 +82,7 @@ class Tile extends PIXI.Graphics {
     this.x = pos.x;
     this.y = pos.y;
 
-    this.on("click", () => board.onClick(this.tilePosition));
+    this.on('click', () => board.onClick(this.tilePosition));
     this.interactive = true;
     this.interactiveChildren = false;
     this.hitArea = new PIXI.Rectangle(0, 0, 100, 100);
@@ -139,8 +139,11 @@ class Board extends PIXI.Container {
     return new Map<ChessPiece, VisualPiece>(
       this.pacoBoard.pieces.map(
         chessPiece =>
-          [chessPiece, new VisualPiece(chessPiece)] as [ChessPiece, VisualPiece]
-      )
+          [chessPiece, new VisualPiece(chessPiece)] as [
+            ChessPiece,
+            VisualPiece
+          ],
+      ),
     );
   }
   public getVisual(abstract: ChessPiece): VisualPiece {
@@ -148,7 +151,7 @@ class Board extends PIXI.Container {
     if (visual != undefined) {
       return visual;
     } else {
-      throw new Error("Chess Piece is not on Board.");
+      throw new Error('Chess Piece is not on Board.');
     }
   }
   /**
@@ -171,7 +174,7 @@ class Board extends PIXI.Container {
     try {
       this.pacoBoard.move(start, target);
     } catch (error) {
-      simpleLog("Error while moving: " + error);
+      simpleLog('Error while moving: ' + error);
     }
   }
   private onBeginSelection(p: Position) {
@@ -301,7 +304,7 @@ app.stage.addChild(board);
 
 // TODO: We should not directly change the DOM. Use a framework like Angular/Vue.
 board.pacoBoard.currentPlayer.subscribeAndFire(color => {
-  let label = document.getElementById("currentPlayer");
+  let label = document.getElementById('currentPlayer');
   if (label != null) {
     label.innerHTML = colorName(color);
   }
@@ -313,8 +316,8 @@ function onStoreState() {
   const json = JSON.stringify(board.pacoBoard.json);
 
   var request = new XMLHttpRequest();
-  request.open("POST", "/board", true);
-  request.setRequestHeader("Content-Type", "application/json");
+  request.open('POST', '/board', true);
+  request.setRequestHeader('Content-Type', 'application/json');
   request.send(json);
 }
 
@@ -322,7 +325,7 @@ function onLoadState() {
   // Fire AJAX request for the board state and listen to result.
 
   var request = new XMLHttpRequest();
-  request.open("GET", "/board", true);
+  request.open('GET', '/board', true);
 
   request.onload = function() {
     if (request.status >= 200 && request.status < 400) {
@@ -334,13 +337,13 @@ function onLoadState() {
       simpleLog(
         `We reached our target server, but it returned an error: ${
           request.status
-        }`
+        }`,
       );
     }
   };
 
   request.onerror = function() {
-    simpleLog("There was a connection error of some sort.");
+    simpleLog('There was a connection error of some sort.');
   };
 
   request.send();
@@ -357,20 +360,20 @@ function onLoadSuccess(data: any) {
   }
 }
 
-let storeButton = document.getElementById("storeButton");
+let storeButton = document.getElementById('storeButton');
 if (storeButton) {
   // Clone the button in order to remove all event listeners.
   let clone = storeButton.cloneNode(true);
   if (storeButton.parentNode != null)
     storeButton.parentNode.replaceChild(clone, storeButton);
-  clone.addEventListener("click", onStoreState);
+  clone.addEventListener('click', onStoreState);
 }
 
-let loadButton = document.getElementById("loadButton");
+let loadButton = document.getElementById('loadButton');
 if (loadButton) {
   // Clone the button in order to remove all event listeners.
   let clone = loadButton.cloneNode(true);
   if (loadButton.parentNode != null)
     loadButton.parentNode.replaceChild(clone, loadButton);
-  clone.addEventListener("click", onLoadState);
+  clone.addEventListener('click', onLoadState);
 }

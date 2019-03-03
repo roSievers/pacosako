@@ -7,8 +7,8 @@ import {
   PieceType,
   Observable,
   PieceState,
-  oppositeColor
-} from "./basicTypes";
+  oppositeColor,
+} from './basicTypes';
 
 /**
  * A ChessPiece is a data object which tracks its inherent properties
@@ -16,14 +16,14 @@ import {
  */
 export class ChessPiece {
   public readonly stateObs: Observable<PieceState> = new Observable(
-    PieceState.alone
+    PieceState.alone,
   );
   private _type: PieceType;
   public readonly positionObs: Observable<Position>;
   constructor(
     type: PieceType,
     public readonly color: PlayerColor,
-    position: Position
+    position: Position,
   ) {
     this.positionObs = new Observable(position);
     this._type = type;
@@ -53,11 +53,11 @@ export class ChessPiece {
    */
   promote() {
     if (this._type != PieceType.pawn) {
-      throw new Error("Only pawns can be promoted.");
+      throw new Error('Only pawns can be promoted.');
     } else if (this.color == PlayerColor.black && this.position.y != 0) {
-      throw new Error("Black pawns may only be promoted in row 0.");
+      throw new Error('Black pawns may only be promoted in row 0.');
     } else if (this.color == PlayerColor.white && this.position.y != 7) {
-      throw new Error("White pawns may only be promoted in row 7");
+      throw new Error('White pawns may only be promoted in row 7');
     } else {
       this._type = PieceType.queen;
     }
@@ -68,7 +68,7 @@ export class ChessPiece {
     return {
       position: this.position.json,
       type: this.type,
-      color: this.color
+      color: this.color,
     };
   }
 
@@ -85,7 +85,7 @@ export class ChessPiece {
     return new ChessPiece(
       json.type,
       json.color,
-      Position.fromJson(json.position)
+      Position.fromJson(json.position),
     );
   }
 
@@ -107,15 +107,15 @@ export class ChessPair {
   constructor(pieces: Array<ChessPiece>) {
     if (pieces.length != 2) {
       throw new Error(
-        "A Pair has exactly two members. Received: " + pieces.length
+        'A Pair has exactly two members. Received: ' + pieces.length,
       );
     }
     let whitePiece = pieces.find(piece => piece.color == PlayerColor.white);
     let blackPiece = pieces.find(piece => piece.color == PlayerColor.black);
     if (whitePiece == undefined) {
-      throw new Error("You did not supply a white piece to the pair.");
+      throw new Error('You did not supply a white piece to the pair.');
     } else if (blackPiece == undefined) {
-      throw new Error("You did not supply a black piece to the pair.");
+      throw new Error('You did not supply a black piece to the pair.');
     } else {
       this.white = whitePiece;
       this.black = blackPiece;
@@ -124,7 +124,7 @@ export class ChessPair {
   }
   assertIntegrity() {
     if (!this.white.position.equals(this.black.position)) {
-      throw new Error("Pieces of a pair must share a Position.");
+      throw new Error('Pieces of a pair must share a Position.');
     }
   }
   get position(): Position {
@@ -169,9 +169,9 @@ export class PacoBoard {
      * Color of the current player
      */
     public readonly currentPlayer: Observable<PlayerColor> = new Observable(
-      PlayerColor.white
+      PlayerColor.white,
     ),
-    chainingIndex: number | null = null
+    chainingIndex: number | null = null,
   ) {
     this.chaining = chainingIndex != null ? pieces[chainingIndex] : null;
   }
@@ -223,7 +223,7 @@ export class PacoBoard {
   move(start: Position, target: Position) {
     let legalMoves = this.select(start);
     if (legalMoves == null || legalMoves.every(p => !p.equals(target))) {
-      throw new Error("This move is not allowed.");
+      throw new Error('This move is not allowed.');
     }
     // Analyze situation
     if (this.chaining != null) {
@@ -232,7 +232,7 @@ export class PacoBoard {
         this.singleMove(this.chaining, target);
         this._at(start).forEach(piece => (piece.state = PieceState.dancing));
       } else {
-        throw new Error("A chain is active, move the chaining piece.");
+        throw new Error('A chain is active, move the chaining piece.');
       }
     } else {
       let movingPieces = this.at(start);
@@ -242,7 +242,7 @@ export class PacoBoard {
       } else if (movingPieces instanceof ChessPair) {
         this.pairMove(movingPieces, target);
       } else {
-        throw new Error("There is no piece at the start position!");
+        throw new Error('There is no piece at the start position!');
       }
     }
   }
@@ -258,7 +258,7 @@ export class PacoBoard {
       movingPair.position = target;
       this.swapPlayerColor();
     } else {
-      throw new Error("Pairs may only be moved onto empty squares.");
+      throw new Error('Pairs may only be moved onto empty squares.');
     }
   }
 
@@ -305,7 +305,8 @@ export class PacoBoard {
    */
   private _at(p: Position): Array<ChessPiece> {
     return this.pieces.filter(
-      chessPiece => chessPiece.position.equals(p) && chessPiece != this.chaining
+      chessPiece =>
+        chessPiece.position.equals(p) && chessPiece != this.chaining,
     );
   }
 
@@ -325,7 +326,7 @@ export class PacoBoard {
         return new ChessPair(pieces);
       default:
         throw new Error(
-          "There are more than two pieces on the same tile. This is forbidden."
+          'There are more than two pieces on the same tile. This is forbidden.',
         );
     }
   }
@@ -344,7 +345,7 @@ export class PacoBoard {
       return piece[0];
     } else {
       throw new Error(
-        "There is more one pieces of a color on the same tile. This is forbidden."
+        'There is more one pieces of a color on the same tile. This is forbidden.',
       );
     }
   }
@@ -373,7 +374,7 @@ export class PacoBoard {
   public indexOf(piece: ChessPiece): number {
     let index = this.pieces.indexOf(piece);
     if (index < 0) {
-      throw new Error("The piece is not on the board.");
+      throw new Error('The piece is not on the board.');
     }
     return index;
   }
@@ -383,7 +384,7 @@ export class PacoBoard {
     return {
       pieces: this.pieces.map(piece => piece.json),
       chaining: this.chaining != null ? this.indexOf(this.chaining) : null,
-      currentPlayer: this.currentPlayer.value
+      currentPlayer: this.currentPlayer.value,
     };
   }
 
@@ -401,7 +402,7 @@ export class PacoBoard {
     return new PacoBoard(
       json.pieces.map(ChessPiece.fromJson),
       new Observable(json.currentPlayer),
-      json.chaining
+      json.chaining,
     );
   }
 
@@ -411,7 +412,7 @@ export class PacoBoard {
    */
   public copyInformation(source: PacoBoard) {
     this.pieces.forEach((piece, index) =>
-      piece.copyInformation(source.pieces[index])
+      piece.copyInformation(source.pieces[index]),
     );
     this.currentPlayer.value = source.currentPlayer.value;
     if (source.chaining != null) {
@@ -443,7 +444,7 @@ export class PacoBoard {
       if (pieces instanceof ChessPiece) {
         return PieceState.alone;
       } else if (pieces == null) {
-        throw new Error("A non chaining piece must be found at its position.");
+        throw new Error('A non chaining piece must be found at its position.');
       } else if (
         this.chaining != null &&
         pieces.position.equals(this.chaining.position) &&
@@ -465,7 +466,7 @@ const basePieceOrder: Array<PieceType> = [
   PieceType.king,
   PieceType.bishop,
   PieceType.knight,
-  PieceType.rock
+  PieceType.rock,
 ];
 
 /**
@@ -496,7 +497,7 @@ function initEmptyBoard(): ChessPiece[] {
  */
 function chessMoves(
   board: PacoBoard,
-  piece: ChessPiece
+  piece: ChessPiece,
 ): Array<Position> | null {
   switch (piece.type) {
     case PieceType.pawn:
@@ -558,7 +559,7 @@ function chessPawnMoves(board: PacoBoard, piece: ChessPiece): Array<Position> {
 function chessSlideMoves(
   board: PacoBoard,
   piece: ChessPiece,
-  direction: [number, number]
+  direction: [number, number],
 ): Array<Position> {
   let possibleMoves = new Array();
   let slide = piece.position.add(direction[0], direction[1]);
@@ -589,11 +590,11 @@ function chessRockMoves(board: PacoBoard, piece: ChessPiece): Array<Position> {
     [1, 0],
     [0, 1],
     [-1, 0],
-    [0, -1]
+    [0, -1],
   ];
   directions.forEach(direction => {
     possibleMoves = possibleMoves.concat(
-      chessSlideMoves(board, piece, direction)
+      chessSlideMoves(board, piece, direction),
     );
   });
   return possibleMoves;
@@ -601,7 +602,7 @@ function chessRockMoves(board: PacoBoard, piece: ChessPiece): Array<Position> {
 
 function chessKnightMoves(
   board: PacoBoard,
-  piece: ChessPiece
+  piece: ChessPiece,
 ): Array<Position> {
   const directions: Array<[number, number]> = [
     [1, 2],
@@ -611,7 +612,7 @@ function chessKnightMoves(
     [-1, -2],
     [-2, -1],
     [-2, 1],
-    [-1, 2]
+    [-1, 2],
   ];
   return directions
     .map(direction => piece.position.add(direction[0], direction[1]))
@@ -621,18 +622,18 @@ function chessKnightMoves(
 
 function chessBishopMoves(
   board: PacoBoard,
-  piece: ChessPiece
+  piece: ChessPiece,
 ): Array<Position> {
   let possibleMoves: Array<Position> = new Array();
   const directions: Array<[number, number]> = [
     [1, 1],
     [-1, 1],
     [1, -1],
-    [-1, -1]
+    [-1, -1],
   ];
   directions.forEach(direction => {
     possibleMoves = possibleMoves.concat(
-      chessSlideMoves(board, piece, direction)
+      chessSlideMoves(board, piece, direction),
     );
   });
   return possibleMoves;
@@ -648,11 +649,11 @@ function chessQueenMoves(board: PacoBoard, piece: ChessPiece): Array<Position> {
     [1, 1],
     [-1, 1],
     [1, -1],
-    [-1, -1]
+    [-1, -1],
   ];
   directions.forEach(direction => {
     possibleMoves = possibleMoves.concat(
-      chessSlideMoves(board, piece, direction)
+      chessSlideMoves(board, piece, direction),
     );
   });
   return possibleMoves;
@@ -667,7 +668,7 @@ function chessKingMoves(board: PacoBoard, piece: ChessPiece): Array<Position> {
     [1, 1],
     [-1, 1],
     [1, -1],
-    [-1, -1]
+    [-1, -1],
   ];
   return directions
     .map(direction => piece.position.add(direction[0], direction[1]))

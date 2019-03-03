@@ -10,7 +10,7 @@ export enum PieceType {
   knight,
   bishop,
   queen,
-  king
+  king,
 }
 
 /**
@@ -21,7 +21,7 @@ export enum PieceState {
   alone,
   dancing,
   takingOver,
-  leavingUnion
+  leavingUnion,
 }
 
 /**
@@ -29,7 +29,7 @@ export enum PieceState {
  */
 export enum PlayerColor {
   white,
-  black
+  black,
 }
 
 /**
@@ -50,9 +50,9 @@ export function oppositeColor(c: PlayerColor): PlayerColor {
  */
 export function colorName(c: PlayerColor): string {
   if (c == PlayerColor.white) {
-    return "white";
+    return 'white';
   } else {
-    return "black";
+    return 'black';
   }
 }
 
@@ -62,7 +62,7 @@ export function colorName(c: PlayerColor): string {
  */
 export enum TileColor {
   white,
-  black
+  black,
 }
 
 /**
@@ -103,7 +103,7 @@ export class Position {
   get json(): Object {
     return {
       x: this.x,
-      y: this.y
+      y: this.y,
     };
   }
 
@@ -145,7 +145,7 @@ export class Vector {
  * @param p
  */
 export function chessPosition(p: Position): string {
-  return "abcdefgh"[p.x] + p.y;
+  return 'abcdefgh'[p.x] + p.y;
 }
 
 /**
