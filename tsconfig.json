@@ -3,7 +3,9 @@
     "module": "commonjs",
     "target": "es5",
     "strict": true,
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true
   },
   "include": ["src/**/*"]
 }
