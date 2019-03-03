@@ -62,6 +62,37 @@ export class ChessPiece {
       this._type = PieceType.queen;
     }
   }
+
+  /** Serialize a ChessPiece object into a data only JSON object. */
+  get json(): Object {
+    return {
+      position: this.position.json,
+      type: this.type,
+      color: this.color
+    };
+  }
+
+  /** Deserialize a JSON object into a ChessPiece */
+  public static fromJson(json: any): ChessPiece {
+    if (
+      !json ||
+      json.type === undefined ||
+      json.color === undefined ||
+      !json.position
+    ) {
+      throw new Error(`Error parsing ${JSON.stringify(json)} as a ChessPiece.`);
+    }
+    return new ChessPiece(
+      json.type,
+      json.color,
+      Position.fromJson(json.position)
+    );
+  }
+
+  public copyInformation(source: ChessPiece) {
+    this._type = source._type;
+    this.positionObs.value = source.position;
+  }
 }
 
 export class ChessPair {
@@ -118,25 +149,32 @@ export class ChessPair {
  */
 export class PacoBoard {
   /**
-   * The current state of all pieces. The objects modelling the pieces
-   * will not change during runtime and can be used as keys in a map.
-   */
-  public readonly pieces: Array<ChessPiece> = initEmptyBoard();
-
-  /**
    * The piece currently leaving a union without a defined target.
    */
-  private chaining: ChessPiece | null = null;
-
+  private chaining: ChessPiece | null;
   /**
-   * Color of the current player
+   * Constructs a new board. When no parameters are supplied, an empty
+   * board is constructed.
+   * @param pieces
+   * @param currentPlayer
+   * @param chainingIndex Index of the chaining Piece or null.
    */
-  public readonly currentPlayer: Observable<PlayerColor> = new Observable(
-    PlayerColor.white
-  );
-
-  /** Constructs a new board in initial position. */
-  constructor() {}
+  constructor(
+    /**
+     * The current state of all pieces. The objects modelling the pieces
+     * will not change during runtime and can be used as keys in a map.
+     */
+    public readonly pieces: Array<ChessPiece> = initEmptyBoard(),
+    /**
+     * Color of the current player
+     */
+    public readonly currentPlayer: Observable<PlayerColor> = new Observable(
+      PlayerColor.white
+    ),
+    chainingIndex: number | null = null
+  ) {
+    this.chaining = chainingIndex != null ? pieces[chainingIndex] : null;
+  }
 
   /**
    * Given a selection position p, PacoBoard.select(p) returns a list of all
@@ -330,6 +368,92 @@ export class PacoBoard {
 
   get chainingPiece(): ChessPiece | null {
     return this.chaining;
+  }
+
+  public indexOf(piece: ChessPiece): number {
+    let index = this.pieces.indexOf(piece);
+    if (index < 0) {
+      throw new Error("The piece is not on the board.");
+    }
+    return index;
+  }
+
+  /** Serialize a PacoBoard object into a data only JSON object. */
+  get json(): Object {
+    return {
+      pieces: this.pieces.map(piece => piece.json),
+      chaining: this.chaining != null ? this.indexOf(this.chaining) : null,
+      currentPlayer: this.currentPlayer.value
+    };
+  }
+
+  /** Deserialize a JSON object into a PacoBoard */
+  public static fromJson(json: any): PacoBoard {
+    console.log(json);
+    if (
+      !json ||
+      !json.pieces ||
+      json.currentPlayer === undefined ||
+      json.chaining === undefined
+    ) {
+      throw new Error(`Error parsing ${JSON.stringify(json)} as a PacoBoard.`);
+    }
+    return new PacoBoard(
+      json.pieces.map(ChessPiece.fromJson),
+      new Observable(json.currentPlayer),
+      json.chaining
+    );
+  }
+
+  /**
+   * Update values of this PacoBoard instance from a provided instance.
+   * This keeps Observers on the various properties alive.
+   */
+  public copyInformation(source: PacoBoard) {
+    this.pieces.forEach((piece, index) =>
+      piece.copyInformation(source.pieces[index])
+    );
+    this.currentPlayer.value = source.currentPlayer.value;
+    if (source.chaining != null) {
+      let index = source.pieces.findIndex(piece => piece == source.chaining);
+      this.chaining = this.pieces[index];
+      console.log(`index: ${index}, piece: ${this.pieces[index]}`);
+      // console.log(`Restoring chaining: ${JSON.stringify(this.chaining.json)}`);
+    } else {
+      this.chaining = null;
+      console.log(`Restoring chaining: null`);
+    }
+
+    console.log(`chaining: ${this.chainingPiece}`);
+
+    this.realignPieceStates();
+  }
+
+  private realignPieceStates() {
+    this.pieces.forEach(piece => {
+      piece.state = this.recomputePieceState(piece);
+    });
+  }
+
+  private recomputePieceState(piece: ChessPiece): PieceState {
+    if (piece == this.chaining) {
+      return PieceState.leavingUnion;
+    } else {
+      let pieces = this.at(piece.position);
+      if (pieces instanceof ChessPiece) {
+        return PieceState.alone;
+      } else if (pieces == null) {
+        throw new Error("A non chaining piece must be found at its position.");
+      } else if (
+        this.chaining != null &&
+        pieces.position.equals(this.chaining.position) &&
+        piece.color == this.chaining.color
+      ) {
+        return PieceState.takingOver;
+      } else {
+        return PieceState.dancing;
+      }
+    }
   }
 }
 

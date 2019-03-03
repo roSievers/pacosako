@@ -98,6 +98,22 @@ export class Position {
       return null;
     }
   }
+
+  /** Serialize a Position object into a data only JSON object. */
+  get json(): Object {
+    return {
+      x: this.x,
+      y: this.y
+    };
+  }
+
+  /** Deserialize a JSON object into a Position */
+  public static fromJson(json: any): Position {
+    if (!json || json.x === undefined || json.y === undefined) {
+      throw new Error(`Error parsing ${JSON.stringify(json)} as a Position.`);
+    }
+    return new Position(json.x, json.y);
+  }
 }
 
 /**

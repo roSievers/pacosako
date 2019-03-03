@@ -128,8 +128,11 @@ class Board extends PIXI.Container {
     this.tiles.forEach((_, tile) => this.addChild(tile));
 
     this.pieces.forEach(piece => this.addChild(piece.sprite));
-
-    this.on("mousedown", () => console.log("testing"));
+  }
+  /** Replaces the internal representation with the supplied representation. */
+  load(pacoBoard: PacoBoard) {
+    // Replace pieces.
+    this.pacoBoard.copyInformation(pacoBoard);
   }
   private createPieces(): Map<ChessPiece, VisualPiece> {
     // Type hint is due to https://github.com/Microsoft/TypeScript/issues/8936
@@ -303,3 +306,50 @@ board.pacoBoard.currentPlayer.subscribeAndFire(color => {
     label.innerHTML = colorName(color);
   }
 });
+
+let jsonStore: string | null = null;
+
+function onStoreState() {
+  simpleLog("store state button clicked.");
+  const json = JSON.stringify(board.pacoBoard.json);
+  simpleLog(`JSON: ${json}`);
+  jsonStore = json;
+}
+
+function onLoadState() {
+  if (jsonStore == null) {
+    simpleLog("No state stored.");
+    return;
+  }
+  try {
+    let object = JSON.parse(jsonStore);
+    let pacoBoard = PacoBoard.fromJson(object);
+    if (JSON.stringify(pacoBoard.json) == jsonStore) {
+      simpleLog(`Retrieved ${pacoBoard} from storage.`);
+      board.load(pacoBoard);
+    } else {
+      simpleLog(`Error: Restoring yields ${JSON.stringify(pacoBoard.json)}`);
+    }
+  } catch (error) {
+    simpleLog(`Error during deserialization: ${error}.`);
+    throw error;
+  }
+}
+
+let storeButton = document.getElementById("storeButton");
+if (storeButton) {
+  // Clone the button in order to remove all event listeners.
+  let clone = storeButton.cloneNode(true);
+  if (storeButton.parentNode != null)
+    storeButton.parentNode.replaceChild(clone, storeButton);
+  clone.addEventListener("click", onStoreState);
+}
+
+let loadButton = document.getElementById("loadButton");
+if (loadButton) {
+  // Clone the button in order to remove all event listeners.
+  let clone = loadButton.cloneNode(true);
+  if (loadButton.parentNode != null)
+    loadButton.parentNode.replaceChild(clone, loadButton);
+  clone.addEventListener("click", onLoadState);
+}
