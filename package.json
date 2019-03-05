@@ -1,5 +1,6 @@
 {
   "scripts": {
     "frontend": "parcel watch -d 'server/dist' --public-url '/assets/' 'frontend/src/index.html'"
-  }
+  },
+  "dependencies": {}
 }
