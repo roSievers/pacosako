@@ -1,5 +1,5 @@
 import { Component, OnInit, Input } from "@angular/core";
-import { ChessPiece, PieceType, PlayerColor } from "../chessPiece";
+import { ChessPiece, PieceType, PlayerColor } from "../types";
 
 @Component({
   selector: "app-piece",
@@ -8,6 +8,7 @@ import { ChessPiece, PieceType, PlayerColor } from "../chessPiece";
 })
 export class PieceComponent implements OnInit {
   @Input() piece: ChessPiece;
+  @Input() clickHandler?: (piece: ChessPiece) => void;
 
   get transform(): string {
     return `translate(${100 * this.piece.position.x}px, ${100 *
@@ -48,4 +49,10 @@ export class PieceComponent implements OnInit {
   }
 
   ngOnInit() {}
+
+  onClick() {
+    if (this.clickHandler !== null) {
+      this.clickHandler(this.piece);
+    }
+  }
 }

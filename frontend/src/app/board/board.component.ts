@@ -1,5 +1,6 @@
 import { Component, OnInit } from "@angular/core";
-import { ChessPiece, PieceType, PlayerColor } from "../chessPiece";
+import { ChessPiece, PieceType, PlayerColor } from "../types";
+import { LoggerService } from "../logger.service";
 
 @Component({
   selector: "app-board",
@@ -42,7 +43,11 @@ export class BoardComponent implements OnInit {
     new ChessPiece(PieceType.pawn, PlayerColor.black, { x: 7, y: 6 })
   ];
 
-  constructor() {}
+  constructor(public loggingService: LoggerService) {}
 
   ngOnInit() {}
+
+  onPieceClick(piece: ChessPiece) {
+    this.loggingService.add(`Piece clicked: ${JSON.stringify(piece)}`);
+  }
 }

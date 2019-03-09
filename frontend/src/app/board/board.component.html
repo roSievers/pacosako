@@ -1,3 +1,7 @@
 <div id="pacoBoard">
-  <app-piece *ngFor="let piece of pieces" [piece]="piece"></app-piece>
+  <app-piece
+    *ngFor="let piece of pieces"
+    [piece]="piece"
+    [clickHandler]="onPieceClick.bind(this)"
+  ></app-piece>
 </div>
