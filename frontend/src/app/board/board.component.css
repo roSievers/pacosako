@@ -1,5 +1,13 @@
 #pacoBoard {
-  background: url("../../assets/green-chessboard.png");
+  background: url('../../assets/green-chessboard.png');
   width: 800px;
   height: 800px;
+}
+
+.highlight {
+  width: 100px;
+  height: 100px;
+  background: yellow;
+  z-index: 2;
+  position: absolute;
 }

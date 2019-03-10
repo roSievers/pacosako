@@ -13,6 +13,13 @@ export class BoardComponent implements OnInit {
 
   highlight: { x: number; y: number } | null = null;
 
+  get highlightTransform(): string {
+    if (this.highlight) {
+      return `translate(${100 * this.highlight.x}px, ${100 *
+        (7 - this.highlight.y)}px)`;
+    }
+  }
+
   constructor(
     public loggingService: LoggerService,
     public boardService: BoardService,
@@ -23,6 +30,10 @@ export class BoardComponent implements OnInit {
   }
 
   onPieceClick(piece: ChessPiece) {
-    this.loggingService.add(`Piece clicked: ${JSON.stringify(piece)}`);
+    this.highlight = piece.position;
+  }
+
+  onDeselect() {
+    this.highlight = null;
   }
 }

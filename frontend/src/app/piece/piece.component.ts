@@ -1,10 +1,10 @@
-import { Component, OnInit, Input } from "@angular/core";
-import { ChessPiece, PieceType, PlayerColor } from "../types";
+import { Component, OnInit, Input } from '@angular/core';
+import { ChessPiece, PieceType, PlayerColor } from '../types';
 
 @Component({
-  selector: "app-piece",
-  templateUrl: "./piece.component.html",
-  styleUrls: ["./piece.component.css"]
+  selector: 'app-piece',
+  templateUrl: './piece.component.html',
+  styleUrls: ['./piece.component.css'],
 })
 export class PieceComponent implements OnInit {
   @Input() piece: ChessPiece;
@@ -24,33 +24,34 @@ export class PieceComponent implements OnInit {
   private get pieceClass(): string {
     switch (this.piece.type) {
       case PieceType.pawn:
-        return "pawn";
+        return 'pawn';
       case PieceType.rock:
-        return "rock";
+        return 'rock';
       case PieceType.knight:
-        return "knight";
+        return 'knight';
       case PieceType.bishop:
-        return "bishop";
+        return 'bishop';
       case PieceType.queen:
-        return "queen";
+        return 'queen';
       case PieceType.king:
-        return "king";
+        return 'king';
       default:
         return this.piece.type;
     }
   }
 
-  private get colorLetter(): "w" | "b" {
+  private get colorLetter(): 'w' | 'b' {
     if (this.piece.color === PlayerColor.white) {
-      return "w";
+      return 'w';
     } else {
-      return "b";
+      return 'b';
     }
   }
 
   ngOnInit() {}
 
-  onClick() {
+  onClick(p1: any) {
+    p1.stopPropagation();
     if (this.clickHandler !== null) {
       this.clickHandler(this.piece);
     }
