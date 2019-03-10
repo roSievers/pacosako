@@ -1,5 +1,5 @@
 import { Component, OnInit, Input } from '@angular/core';
-import { Position, PacoMoveType } from '../types';
+import { Position, PacoMoveType, MoveTarget } from '../types';
 
 @Component({
   selector: 'app-move-target',
@@ -7,17 +7,16 @@ import { Position, PacoMoveType } from '../types';
   styleUrls: ['./move-target.component.css'],
 })
 export class MoveTargetComponent implements OnInit {
-  @Input() position: Position;
+  @Input() target: MoveTarget;
   @Input() clickHandler?: (position: Position) => void;
-  @Input() moveType?: PacoMoveType;
 
   constructor() {}
 
   ngOnInit() {}
 
   get transform(): string {
-    return `translate(${100 * this.position.x}px, ${100 *
-      (7 - this.position.y)}px)`;
+    return `translate(${100 * this.target.position.x}px, ${100 *
+      (7 - this.target.position.y)}px)`;
   }
 
   get cssClasses(): string {
@@ -25,7 +24,7 @@ export class MoveTargetComponent implements OnInit {
   }
 
   get moveTypeClass(): string {
-    switch (this.moveType) {
+    switch (this.target.type) {
       case PacoMoveType.chain:
         return 'chain';
       case PacoMoveType.union:
@@ -38,7 +37,7 @@ export class MoveTargetComponent implements OnInit {
   onClick(clickEvent: any) {
     clickEvent.stopPropagation();
     if (this.clickHandler !== null) {
-      this.clickHandler(this.position);
+      this.clickHandler(this.target.position);
     }
   }
 }

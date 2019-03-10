@@ -54,6 +54,14 @@ export enum PacoMoveType {
 }
 
 /**
+ * Describes a possible move target and specifies what will happen
+ * when you move there.
+ */
+export class MoveTarget {
+  constructor(readonly position: Position, readonly type: PacoMoveType) {}
+}
+
+/**
  * A data only version of the Position class.
  */
 export interface IPosition {
@@ -258,7 +266,7 @@ export class PacoBoard {
    *
    * @param p The position the user wants to select.
    */
-  select(p: Position): Position[] | null {
+  select(p: Position): MoveTarget[] | null {
     // TODO: This function is lacking a proper implementation.
     const pieces = this.at(p);
     if (this.chainingPiece != null) {
@@ -291,7 +299,10 @@ export class PacoBoard {
    */
   move(start: Position, target: Position) {
     let legalMoves = this.select(start);
-    if (legalMoves == null || legalMoves.every(p => !p.equals(target))) {
+    if (
+      legalMoves == null ||
+      legalMoves.every(p => !p.position.equals(target))
+    ) {
       throw new Error('This move is not allowed.');
     }
     // Analyze situation
@@ -482,7 +493,7 @@ export class PacoBoard {
  * @param board
  * @param p
  */
-function chessMoves(board: PacoBoard, piece: ChessPiece): Position[] | null {
+function chessMoves(board: PacoBoard, piece: ChessPiece): MoveTarget[] | null {
   switch (piece.type) {
     case PieceType.pawn:
       return chessPawnMoves(board, piece);
@@ -501,38 +512,42 @@ function chessMoves(board: PacoBoard, piece: ChessPiece): Position[] | null {
   }
 }
 
-function chessPawnMoves(board: PacoBoard, piece: ChessPiece): Position[] {
+function chessPawnMoves(board: PacoBoard, piece: ChessPiece): MoveTarget[] {
   let forward = piece.color == PlayerColor.white ? 1 : -1;
-  let possibleMoves = new Array();
+  let possibleMoves: MoveTarget[] = new Array();
   {
     let strikeLeft = piece.position.add({ x: -1, y: forward });
-    if (
-      strikeLeft != null &&
-      board.atWithColor(strikeLeft, oppositeColor(piece.color)) != null
-    ) {
-      possibleMoves.push(strikeLeft);
+    if (strikeLeft !== null) {
+      let target = board.at(strikeLeft);
+      if (target instanceof ChessPiece && target.color !== piece.color) {
+        possibleMoves.push(new MoveTarget(strikeLeft, PacoMoveType.union));
+      } else if (target instanceof ChessPair) {
+        possibleMoves.push(new MoveTarget(strikeLeft, PacoMoveType.chain));
+      }
     }
   }
   {
     let strikeRight = piece.position.add({ x: 1, y: forward });
-    if (
-      strikeRight != null &&
-      board.atWithColor(strikeRight, oppositeColor(piece.color)) != null
-    ) {
-      possibleMoves.push(strikeRight);
+    if (strikeRight !== null) {
+      let target = board.at(strikeRight);
+      if (target instanceof ChessPiece && target.color !== piece.color) {
+        possibleMoves.push(new MoveTarget(strikeRight, PacoMoveType.union));
+      } else if (target instanceof ChessPair) {
+        possibleMoves.push(new MoveTarget(strikeRight, PacoMoveType.chain));
+      }
     }
   }
   {
     let moveForward = piece.position.add({ x: 0, y: forward });
     if (moveForward != null && board.at(moveForward) == null) {
-      possibleMoves.push(moveForward);
+      possibleMoves.push(new MoveTarget(moveForward, PacoMoveType.plain));
       if (
         (piece.position.y == 1 && piece.color == PlayerColor.white) ||
         (piece.position.y == 6 && piece.color == PlayerColor.black)
       ) {
         let leapForward = piece.position.add({ x: 0, y: 2 * forward });
         if (leapForward != null && board.at(leapForward) == null) {
-          possibleMoves.push(leapForward);
+          possibleMoves.push(new MoveTarget(leapForward, PacoMoveType.plain));
         }
       }
     }
@@ -544,23 +559,23 @@ function chessSlideMoves(
   board: PacoBoard,
   piece: ChessPiece,
   direction: IPosition,
-): Position[] {
-  let possibleMoves = new Array();
+): MoveTarget[] {
+  let possibleMoves: MoveTarget[] = new Array();
   let slide = piece.position.add(direction);
   while (slide != null) {
     let target = board.at(slide);
     if (target instanceof ChessPair) {
-      possibleMoves.push(slide);
+      possibleMoves.push(new MoveTarget(slide, PacoMoveType.chain));
       return possibleMoves;
     } else if (target instanceof ChessPiece) {
       if (target.color != piece.color) {
-        possibleMoves.push(slide);
+        possibleMoves.push(new MoveTarget(slide, PacoMoveType.union));
         return possibleMoves;
       } else {
         return possibleMoves;
       }
     } else {
-      possibleMoves.push(slide);
+      possibleMoves.push(new MoveTarget(slide, PacoMoveType.plain));
       slide = slide.add(direction);
     }
   }
@@ -568,8 +583,8 @@ function chessSlideMoves(
   return possibleMoves;
 }
 
-function chessRockMoves(board: PacoBoard, piece: ChessPiece): Position[] {
-  let possibleMoves: Position[] = new Array();
+function chessRockMoves(board: PacoBoard, piece: ChessPiece): MoveTarget[] {
+  let possibleMoves: MoveTarget[] = new Array();
   const directions: IPosition[] = [
     { x: 1, y: 0 },
     { x: 0, y: 1 },
@@ -584,7 +599,8 @@ function chessRockMoves(board: PacoBoard, piece: ChessPiece): Position[] {
   return possibleMoves;
 }
 
-function chessKnightMoves(board: PacoBoard, piece: ChessPiece): Position[] {
+function chessKnightMoves(board: PacoBoard, piece: ChessPiece): MoveTarget[] {
+  let possibleMoves: MoveTarget[] = new Array();
   const directions: IPosition[] = [
     { x: 1, y: 2 },
     { x: 2, y: 1 },
@@ -595,14 +611,24 @@ function chessKnightMoves(board: PacoBoard, piece: ChessPiece): Position[] {
     { x: -2, y: 1 },
     { x: -1, y: 2 },
   ];
-  return directions
-    .map(direction => piece.position.add(direction))
-    .filter((p): p is Position => p != null)
-    .filter(p => board.canMoveWithColor(p, piece.color));
+  directions.forEach(p => {
+    let position = piece.position.add(p);
+    if (position !== null) {
+      let target = board.at(position);
+      if (target === null) {
+        possibleMoves.push(new MoveTarget(position, PacoMoveType.plain));
+      } else if (target instanceof ChessPair) {
+        possibleMoves.push(new MoveTarget(position, PacoMoveType.chain));
+      } else if (target.color != piece.color) {
+        possibleMoves.push(new MoveTarget(position, PacoMoveType.union));
+      }
+    }
+  });
+  return possibleMoves;
 }
 
-function chessBishopMoves(board: PacoBoard, piece: ChessPiece): Position[] {
-  let possibleMoves: Position[] = new Array();
+function chessBishopMoves(board: PacoBoard, piece: ChessPiece): MoveTarget[] {
+  let possibleMoves: MoveTarget[] = new Array();
   const directions: IPosition[] = [
     { x: 1, y: 1 },
     { x: -1, y: 1 },
@@ -617,8 +643,8 @@ function chessBishopMoves(board: PacoBoard, piece: ChessPiece): Position[] {
   return possibleMoves;
 }
 
-function chessQueenMoves(board: PacoBoard, piece: ChessPiece): Position[] {
-  let possibleMoves: Position[] = new Array();
+function chessQueenMoves(board: PacoBoard, piece: ChessPiece): MoveTarget[] {
+  let possibleMoves: MoveTarget[] = new Array();
   const directions: IPosition[] = [
     { x: 1, y: 0 },
     { x: 0, y: 1 },
@@ -637,7 +663,7 @@ function chessQueenMoves(board: PacoBoard, piece: ChessPiece): Position[] {
   return possibleMoves;
 }
 
-function chessKingMoves(board: PacoBoard, piece: ChessPiece): Position[] {
+function chessKingMoves(board: PacoBoard, piece: ChessPiece): MoveTarget[] {
   const directions: IPosition[] = [
     { x: 1, y: 0 },
     { x: 0, y: 1 },
@@ -651,5 +677,6 @@ function chessKingMoves(board: PacoBoard, piece: ChessPiece): Position[] {
   return directions
     .map(direction => piece.position.add(direction))
     .filter((p): p is Position => p != null)
-    .filter(p => board.at(p) == null);
+    .filter(p => board.at(p) == null)
+    .map(p => new MoveTarget(p, PacoMoveType.plain));
 }

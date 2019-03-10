@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { ChessPiece, PacoBoard, Position } from '../types';
+import { ChessPiece, PacoBoard, Position, MoveTarget } from '../types';
 import { LoggerService } from '../logger.service';
 import { BoardService } from '../board.service';
 
@@ -12,7 +12,7 @@ export class BoardComponent implements OnInit {
   board: PacoBoard;
 
   highlight: ChessPiece | null = null;
-  legalMoves: Position[] = new Array();
+  legalMoves: MoveTarget[] = new Array();
 
   get highlightTransform(): string {
     if (this.highlight) {

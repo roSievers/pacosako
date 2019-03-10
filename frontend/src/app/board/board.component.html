@@ -11,7 +11,7 @@
   ></div>
   <app-move-target
     *ngFor="let target of legalMoves"
-    [position]="target"
+    [target]="target"
     [clickHandler]="onMoveTargetClick.bind(this)"
   ></app-move-target>
 </div>
