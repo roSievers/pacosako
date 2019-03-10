@@ -1,5 +1,6 @@
 import { Component, OnInit, Input } from '@angular/core';
 import { Position, PacoMoveType, MoveTarget } from '../types';
+import { BoardComponent } from '../board/board.component';
 
 @Component({
   selector: 'app-move-target',
@@ -8,7 +9,7 @@ import { Position, PacoMoveType, MoveTarget } from '../types';
 })
 export class MoveTargetComponent implements OnInit {
   @Input() target: MoveTarget;
-  @Input() clickHandler?: (position: Position) => void;
+  @Input() handler?: BoardComponent;
 
   constructor() {}
 
@@ -36,8 +37,19 @@ export class MoveTargetComponent implements OnInit {
 
   onClick(clickEvent: any) {
     clickEvent.stopPropagation();
-    if (this.clickHandler !== null) {
-      this.clickHandler(this.target.position);
+    if (this.handler !== null) {
+      this.handler.onMoveTargetClick(this.target);
+    }
+  }
+
+  allowDrop(event) {
+    event.preventDefault();
+  }
+
+  drop(event) {
+    event.preventDefault();
+    if (this.handler !== null) {
+      this.handler.onPieceDrop(this.target);
     }
   }
 }

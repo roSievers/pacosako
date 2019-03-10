@@ -2,4 +2,6 @@
   [ngClass]="cssClasses"
   [ngStyle]="{ transform: transform }"
   (click)="onClick($event)"
+  (dragover)="allowDrop($event)"
+  (drop)="drop($event)"
 ></div>

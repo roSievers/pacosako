@@ -2,7 +2,8 @@
   <app-piece
     *ngFor="let piece of board.pieces"
     [piece]="piece"
-    [clickHandler]="onPieceClick.bind(this)"
+    [board]="board"
+    [handler]="this"
   ></app-piece>
   <div
     class="highlight"
@@ -12,6 +13,6 @@
   <app-move-target
     *ngFor="let target of legalMoves"
     [target]="target"
-    [clickHandler]="onMoveTargetClick.bind(this)"
+    [handler]="this"
   ></app-move-target>
 </div>

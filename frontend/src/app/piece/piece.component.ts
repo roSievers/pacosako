@@ -1,5 +1,14 @@
 import { Component, OnInit, Input } from '@angular/core';
-import { ChessPiece, PieceType, PlayerColor } from '../types';
+import {
+  ChessPiece,
+  PieceType,
+  PlayerColor,
+  PacoBoard,
+  IPosition,
+  PieceState,
+} from '../types';
+import { LoggerService } from '../logger.service';
+import { BoardComponent } from '../board/board.component';
 
 @Component({
   selector: 'app-piece',
@@ -8,18 +17,60 @@ import { ChessPiece, PieceType, PlayerColor } from '../types';
 })
 export class PieceComponent implements OnInit {
   @Input() piece: ChessPiece;
-  @Input() clickHandler?: (piece: ChessPiece) => void;
+  @Input() board: PacoBoard;
+  @Input() handler?: BoardComponent;
 
   get transform(): string {
-    return `translate(${100 * this.piece.position.x}px, ${100 *
-      (7 - this.piece.position.y)}px)`;
+    let fieldOffset = this.fieldOffset;
+    let stateOffset = this.stateOffset;
+    let offset = {
+      x: fieldOffset.x + stateOffset.x,
+      y: fieldOffset.y + stateOffset.y,
+    };
+
+    return `translate(${offset.x}px, ${offset.y}px)`;
   }
 
   get cssClasses(): string {
     return `piece ${this.pieceClass}-${this.colorLetter}`;
   }
 
-  constructor() {}
+  get fieldOffset(): IPosition {
+    return {
+      x: 100 * this.piece.position.x,
+      y: 100 * (7 - this.piece.position.y),
+    };
+  }
+
+  get stateOffset(): IPosition {
+    if (this.piece.state == PieceState.alone) {
+      return { x: 0, y: 0 };
+    }
+    if (this.piece.state == PieceState.dancing) {
+      if (this.piece.color == PlayerColor.white) {
+        return { x: 20, y: 0 };
+      } else {
+        return { x: -20, y: 0 };
+      }
+    }
+    if (this.piece.state == PieceState.takingOver) {
+      if (this.piece.color == PlayerColor.white) {
+        return { x: 10, y: 10 };
+      } else {
+        return { x: -10, y: 10 };
+      }
+    }
+    if (this.piece.state == PieceState.leavingUnion) {
+      if (this.piece.color == PlayerColor.white) {
+        return { x: 30, y: -10 };
+      } else {
+        return { x: -30, y: -10 };
+      }
+    }
+    return { x: 0, y: 0 };
+  }
+
+  constructor(private log: LoggerService) {}
 
   private get pieceClass(): string {
     switch (this.piece.type) {
@@ -52,8 +103,19 @@ export class PieceComponent implements OnInit {
 
   onClick(clickEvent: any) {
     clickEvent.stopPropagation();
-    if (this.clickHandler !== null) {
-      this.clickHandler(this.piece);
+    if (this.handler !== null) {
+      this.handler.onPieceClick(this.piece);
     }
+  }
+
+  drag(event) {
+    event.dataTransfer.setData('text', this.piece);
+    if (this.handler !== null) {
+      this.handler.onPieceDrag(this.piece);
+    }
+  }
+
+  dragEnd(event) {
+    this.handler.onDragEnd();
   }
 }

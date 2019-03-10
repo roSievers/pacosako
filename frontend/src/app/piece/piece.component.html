@@ -2,4 +2,7 @@
   [ngClass]="cssClasses"
   [ngStyle]="{ transform: transform }"
   (click)="onClick($event)"
+  draggable="true"
+  (dragstart)="drag($event)"
+  (dragend)="dragEnd($event)"
 ></div>
