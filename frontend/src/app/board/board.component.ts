@@ -30,7 +30,15 @@ export class BoardComponent implements OnInit {
   }
 
   onPieceClick(piece: ChessPiece) {
-    this.highlight = piece.position;
+    if (
+      this.highlight &&
+      this.highlight.x == piece.position.x &&
+      this.highlight.y == piece.position.y
+    ) {
+      this.highlight = null;
+    } else {
+      this.highlight = piece.position;
+    }
   }
 
   onDeselect() {
