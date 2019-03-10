@@ -7,6 +7,7 @@ import { BoardComponent } from './board/board.component';
 import { LogComponent } from './log/log.component';
 import { ButtonsComponent } from './buttons/buttons.component';
 import { PieceComponent } from './piece/piece.component';
+import { MoveTargetComponent } from './move-target/move-target.component';
 
 @NgModule({
   declarations: [
@@ -15,6 +16,7 @@ import { PieceComponent } from './piece/piece.component';
     LogComponent,
     ButtonsComponent,
     PieceComponent,
+    MoveTargetComponent,
   ],
   imports: [BrowserModule, AppRoutingModule],
   providers: [],

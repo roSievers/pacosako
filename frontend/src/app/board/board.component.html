@@ -1,6 +1,6 @@
 <div id="pacoBoard" (click)="onDeselect()">
   <app-piece
-    *ngFor="let piece of pieces"
+    *ngFor="let piece of board.pieces"
     [piece]="piece"
     [clickHandler]="onPieceClick.bind(this)"
   ></app-piece>
@@ -9,4 +9,9 @@
     *ngIf="highlight"
     [ngStyle]="{ transform: highlightTransform }"
   ></div>
+  <app-move-target
+    *ngFor="let target of legalMoves"
+    [position]="target"
+    [clickHandler]="onMoveTargetClick.bind(this)"
+  ></app-move-target>
 </div>

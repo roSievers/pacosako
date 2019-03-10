@@ -50,8 +50,8 @@ export class PieceComponent implements OnInit {
 
   ngOnInit() {}
 
-  onClick(p1: any) {
-    p1.stopPropagation();
+  onClick(clickEvent: any) {
+    clickEvent.stopPropagation();
     if (this.clickHandler !== null) {
       this.clickHandler(this.piece);
     }

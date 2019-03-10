@@ -1,0 +1,16 @@
+.legalMove {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  z-index: 6;
+}
+
+.plain {
+  background: url('../../assets/move-plain.png');
+}
+.union {
+  background: url('../../assets/move-form-union.png');
+}
+.chain {
+  background: url('../../assets/move-chain.png');
+}
