@@ -40,6 +40,8 @@ export class BoardComponent implements OnInit {
 
   onMoveTargetClick(position: Position) {
     this.loggingService.add(`Move target: ${JSON.stringify(position)}`);
+    this.board.move(this.highlight.position, position);
+    this.onDeselect();
   }
 
   onDeselect() {
