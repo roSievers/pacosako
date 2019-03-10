@@ -284,8 +284,12 @@ export class PacoBoard {
     ) {
       return chessMoves(this, pieces);
     } else if (pieces instanceof ChessPair) {
-      // Pairs may always move.
-      return chessMoves(this, pieces.ofColor(this.currentPlayer));
+      // Pairs may always move, but they can only execute plain moves.
+      let singlePieceMoves = chessMoves(
+        this,
+        pieces.ofColor(this.currentPlayer),
+      );
+      return singlePieceMoves.filter(move => move.type == PacoMoveType.plain);
     } else {
       // The Position is empty.
       return null;
