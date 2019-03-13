@@ -1,36 +1,11 @@
-import { Subject } from 'rxjs';
-
-/**
- * The PieceType enum lists all possible kinds of chess pieces.
- * Pawn, Rock, Knight, Bishop, Queen, King
- */
-export enum PieceType {
-  pawn,
-  rock,
-  knight,
-  bishop,
-  queen,
-  king,
-}
-
-/**
- * Current state of the Piece. This describes the situation in which the piece
- * is on its tile.
- */
-export enum PieceState {
-  alone,
-  dancing,
-  takingOver,
-  leavingUnion,
-}
-
-/**
- * The PlayerColor is either white or black.
- */
-export enum PlayerColor {
-  white,
-  black,
-}
+import {
+  IPosition,
+  PlayerColor,
+  PieceType,
+  PieceState,
+  PacoMoveType,
+} from './interfaces';
+import { PositionDto, PieceDto, BoardDto } from './types.dto';
 
 /**
  * Returns the opposite player color.
@@ -45,28 +20,11 @@ function oppositeColor(c: PlayerColor): PlayerColor {
 }
 
 /**
- * Type of a move that is offered to the player.
- */
-export enum PacoMoveType {
-  plain,
-  union,
-  chain,
-}
-
-/**
  * Describes a possible move target and specifies what will happen
  * when you move there.
  */
 export class MoveTarget {
   constructor(readonly position: Position, readonly type: PacoMoveType) {}
-}
-
-/**
- * A data only version of the Position class.
- */
-export interface IPosition {
-  readonly x: number;
-  readonly y: number;
 }
 
 /**
@@ -104,7 +62,7 @@ export class Position implements IPosition {
   }
 
   /** Serialize a Position object into a data only object. */
-  get data(): IPosition {
+  get dto(): PositionDto {
     return {
       x: this.x,
       y: this.y,
@@ -144,6 +102,22 @@ export class ChessPiece {
     } else {
       this.type = PieceType.queen;
     }
+  }
+
+  get dto(): PieceDto {
+    return {
+      type: this.type,
+      color: this.color,
+      position: this.position.dto,
+    };
+  }
+
+  public static fromData(data: PieceDto): ChessPiece {
+    return new ChessPiece(
+      data.type,
+      data.color,
+      Position.fromData(data.position),
+    );
   }
 }
 
@@ -249,9 +223,15 @@ export class PacoBoard {
    * The current state of all pieces. The objects modelling the pieces
    * will not change during runtime and can be used as keys in a map.
    */
-  public pieces: ChessPiece[] = piecesInInitialPosition();
+  public pieces: ChessPiece[];
 
-  constructor() {}
+  constructor(pieces: ChessPiece[] = null) {
+    if (pieces === null) {
+      this.pieces = piecesInInitialPosition();
+    } else {
+      this.pieces = pieces;
+    }
+  }
 
   /**
    * Given a selection position p, PacoBoard.select(p) returns a list of all
@@ -461,6 +441,25 @@ export class PacoBoard {
       throw new Error('The piece is not on the board.');
     }
     return index;
+  }
+
+  get dto(): BoardDto {
+    return {
+      pieces: this.pieces.map(piece => piece.dto),
+      chaining: this.chaining != null ? this.indexOf(this.chaining) : null,
+      currentPlayer: this.currentPlayer,
+    };
+  }
+
+  /** Deserialize a data transfer object into a PacoBoard */
+  public static fromData(data: BoardDto): PacoBoard {
+    let board = new PacoBoard(data.pieces.map(ChessPiece.fromData));
+    board.currentPlayer = data.currentPlayer;
+    if (data.chaining !== null) {
+      board.chaining = board.pieces[data.chaining];
+    }
+    board.realignPieceStates();
+    return board;
   }
 
   private realignPieceStates() {

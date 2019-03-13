@@ -1,14 +1,8 @@
 import { Component, OnInit, Input } from '@angular/core';
-import {
-  ChessPiece,
-  PieceType,
-  PlayerColor,
-  PacoBoard,
-  IPosition,
-  PieceState,
-} from '../types';
+import { ChessPiece, PacoBoard } from '../types';
 import { LoggerService } from '../logger.service';
 import { BoardComponent } from '../board/board.component';
+import { IPosition, PieceState, PlayerColor, PieceType } from '../interfaces';
 
 @Component({
   selector: 'app-piece',

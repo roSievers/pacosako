@@ -1,4 +1,4 @@
-<div id="pacoBoard" (click)="onDeselect()">
+<div *ngIf="board" id="pacoBoard" (click)="onDeselect()">
   <app-piece
     *ngFor="let piece of board.pieces"
     [piece]="piece"

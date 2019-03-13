@@ -1,6 +1,7 @@
 import { Component, OnInit, Input } from '@angular/core';
-import { Position, PacoMoveType, MoveTarget } from '../types';
+import { MoveTarget } from '../types';
 import { BoardComponent } from '../board/board.component';
+import { PacoMoveType } from '../interfaces';
 
 @Component({
   selector: 'app-move-target',
