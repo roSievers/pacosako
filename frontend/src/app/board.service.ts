@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
-import { PacoBoard } from './types';
+import { PacoBoard } from '../../../shared/types';
 import { LoggerService } from './logger.service';
 import { Observable, Subject, ReplaySubject } from 'rxjs';
-import { BoardDto } from './types.dto';
+import { BoardDto } from '../../../shared/types.dto';
 
 @Injectable({
   providedIn: 'root',

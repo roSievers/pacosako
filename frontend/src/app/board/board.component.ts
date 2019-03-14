@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
-import { ChessPiece, PacoBoard, MoveTarget } from '../types';
+import { ChessPiece, PacoBoard, MoveTarget } from '../../../../shared/types';
 import { LoggerService } from '../logger.service';
 import { BoardService } from '../board.service';
-import { PacoMoveType } from '../interfaces';
+import { PacoMoveType } from '../../../../shared/interfaces';
 import { ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
 
@@ -36,7 +36,7 @@ export class BoardComponent implements OnInit {
   ngOnInit() {
     this.route.paramMap.subscribe(paramMap => {
       const id: string = paramMap.get('id');
-      this.log.add(`Current board id is: ${id}`);
+      this.log.add(`Current board identifier is: ${id}`);
       this.onRouteChange(id);
     });
   }
