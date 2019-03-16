@@ -2,6 +2,8 @@
 
 An implementation of the game [Paco Ŝako](https://pacosako.com/) as a web app.
 
+![A screenshot of the game during play.](https://raw.githubusercontent.com/roSievers/pacosako/angular-frontend/screenshot.png)
+
 ## Development
 
 The frontend is written in [Typescript](http://typescriptlang.org/)
