@@ -1,0 +1,18 @@
+<div *ngIf="board" id="pacoBoard" (click)="onDeselect()">
+  <app-piece
+    *ngFor="let piece of board.pieces"
+    [piece]="piece"
+    [board]="board"
+    [handler]="this"
+  ></app-piece>
+  <div
+    class="highlight"
+    *ngIf="highlight"
+    [ngStyle]="{ transform: highlightTransform }"
+  ></div>
+  <app-move-target
+    *ngFor="let target of legalMoves"
+    [target]="target"
+    [handler]="this"
+  ></app-move-target>
+</div>
