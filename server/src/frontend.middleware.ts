@@ -1,4 +1,9 @@
-import { Injectable, MiddlewareFunction, NestMiddleware } from '@nestjs/common';
+import {
+  Injectable,
+  MiddlewareFunction,
+  NestMiddleware,
+  Logger,
+} from '@nestjs/common';
 import * as path from 'path';
 
 const allowedExt = ['.js', '.ico', '.css', '.png', '.jpg'];
@@ -8,10 +13,12 @@ const resolvePath = (file: string) =>
 
 @Injectable()
 export class FrontendMiddleware implements NestMiddleware {
+  private logger = new Logger('Middleware');
+
   resolve(...args: any[]): MiddlewareFunction {
     return (req, res, next) => {
       const { baseUrl } = req;
-      console.log(`Middleware was called with url = ${baseUrl}`);
+      this.logger.log(`url = ${baseUrl}`);
       if (baseUrl.indexOf('api') === 1) {
         // it starts with /api --> continue with execution
         next();

@@ -89,7 +89,7 @@ export class BoardComponent implements OnInit {
     );
     this.board.move(this.highlight.position, target.position);
 
-    this.boardService.setBoard(this.boardId, this.board.dto);
+    this.boardService.setBoardFromUi(this.boardId, this.board.dto);
 
     if (target.type === PacoMoveType.chain) {
       if (this.board.chainingPiece === null) {
