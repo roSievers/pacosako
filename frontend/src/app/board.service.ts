@@ -30,6 +30,7 @@ export class BoardService {
       board = new ReplaySubject<BoardDto>();
       board.next(this.initialBoard());
       this.boards.set(key, board);
+      this.socket.emit('load-board', key);
     }
     return board;
   }
