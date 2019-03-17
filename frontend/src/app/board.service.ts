@@ -12,7 +12,7 @@ export class BoardService {
   // We store a dto instead of a proper board to make sure that the object
   // isn't mutated accidentally.
   private boards: Map<string, Subject<BoardDto>> = new Map();
-  private port = '3001';
+  private port = '3000';
   private socket: SocketIOClient.Socket;
 
   constructor(public log: LoggerService) {

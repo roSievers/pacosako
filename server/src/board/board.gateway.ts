@@ -10,7 +10,7 @@ import { Client, Server } from 'socket.io';
 import { BoardDto } from '../../../shared/types.dto';
 import { PacoBoard } from '../../../shared/types';
 
-@WebSocketGateway(3001)
+@WebSocketGateway()
 export class BoardGateway implements OnGatewayConnection {
   @WebSocketServer() wss: Server;
 
