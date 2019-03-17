@@ -13,4 +13,5 @@ to build the frontend and provide the distribution to the server.
 
 The server is also written in Typescript using [NestJS](http://nestjs.com/) as
 server framework. Run `npm run start:dev` in the `/server` folder in order to start
-a NestJS development server.
+a NestJS development server. Live communication between frontend and backend
+is done using [Socket.io](https://socket.io/).

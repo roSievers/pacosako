@@ -12,7 +12,7 @@ export class BoardService {
   // We store a dto instead of a proper board to make sure that the object
   // isn't mutated accidentally.
   private boards: Map<string, Subject<BoardDto>> = new Map();
-  private url = 'http://localhost:3001';
+  private port = '3001';
   private socket: SocketIOClient.Socket;
 
   constructor(public log: LoggerService) {
@@ -56,6 +56,12 @@ export class BoardService {
 
   sendMessage(message: string) {
     this.socket.emit('add-message', message);
+  }
+
+  get url(): string {
+    return `${window.location.protocol}//${window.location.hostname}:${
+      this.port
+    }`;
   }
 
   connectSocket() {
