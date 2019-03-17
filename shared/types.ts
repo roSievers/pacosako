@@ -225,7 +225,7 @@ export class PacoBoard {
    */
   public pieces: ChessPiece[];
 
-  constructor(pieces: ChessPiece[] = null) {
+  constructor(pieces: ChessPiece[] | null = null) {
     if (pieces === null) {
       this.pieces = piecesInInitialPosition();
     } else {
@@ -269,7 +269,11 @@ export class PacoBoard {
         this,
         pieces.ofColor(this.currentPlayer),
       );
-      return singlePieceMoves.filter(move => move.type == PacoMoveType.plain);
+      if (singlePieceMoves === null) {
+        return null;
+      } else {
+        return singlePieceMoves.filter(move => move.type == PacoMoveType.plain);
+      }
     } else {
       // The Position is empty.
       return null;
