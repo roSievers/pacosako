@@ -1,9 +1,8 @@
 import { Component, OnInit, Input } from '@angular/core';
 import { ChessPiece, PacoBoard, Move } from '../../../../shared/types';
 import { LoggerService } from '../logger.service';
-import { BoardService } from '../board.service';
 import { PacoMoveType } from '../../../../shared/interfaces';
-import { Subscription, Observable } from 'rxjs';
+import { IBoardProvider } from '../interfaces';
 
 @Component({
   selector: 'app-board',
@@ -16,10 +15,8 @@ export class BoardComponent implements OnInit {
   highlight: ChessPiece | null = null;
   legalMoves: Move[] | null = new Array();
   dragging: boolean = false;
-  private subscription: Subscription | null = null;
 
-  @Input() boardId: Observable<string> | undefined;
-  currentBoardId: string | null = null;
+  @Input() handler?: IBoardProvider;
 
   get highlightTransform(): string {
     if (this.highlight) {
@@ -30,28 +27,14 @@ export class BoardComponent implements OnInit {
     }
   }
 
-  constructor(private log: LoggerService, public boardService: BoardService) {}
+  constructor(private log: LoggerService) {}
 
   ngOnInit() {
-    if (this.boardId) {
-      this.boardId.subscribe(boardId => this.onRouteChange(boardId));
+    if (this.handler !== undefined) {
+      this.handler.board.subscribe(newBoard => (this.board = newBoard));
     } else {
-      this.log.add('Error: Using a BoardComponent without boardId.');
+      this.log.add('Error: Using a BoardComponent without [handler].');
     }
-  }
-
-  private onRouteChange(boardId: string) {
-    this.currentBoardId = boardId;
-
-    if (this.subscription) {
-      this.subscription.unsubscribe();
-    }
-
-    this.subscription = this.boardService
-      .getBoard(boardId)
-      .subscribe(boardDto => {
-        this.board = PacoBoard.fromData(boardDto);
-      });
   }
 
   onPieceClick(piece: ChessPiece) {
@@ -88,7 +71,7 @@ export class BoardComponent implements OnInit {
     );
     this.board.move(move);
 
-    this.boardService.setBoardFromUi(this.currentBoardId, this.board.dto);
+    this.handler.storeBoard(this.board);
 
     if (move.type === PacoMoveType.chain) {
       if (this.board.chainingPiece === null) {
