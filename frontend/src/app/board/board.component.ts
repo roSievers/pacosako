@@ -1,10 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Input } from '@angular/core';
 import { ChessPiece, PacoBoard, MoveTarget } from '../../../../shared/types';
 import { LoggerService } from '../logger.service';
 import { BoardService } from '../board.service';
 import { PacoMoveType } from '../../../../shared/interfaces';
-import { ActivatedRoute } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subscription, Observable } from 'rxjs';
 
 @Component({
   selector: 'app-board',
@@ -17,8 +16,10 @@ export class BoardComponent implements OnInit {
   highlight: ChessPiece | null = null;
   legalMoves: MoveTarget[] = new Array();
   dragging: boolean = false;
-  subscription: Subscription;
-  boardId: string;
+  private subscription: Subscription;
+
+  @Input() boardId: Observable<string>;
+  currentBoardId: string;
 
   get highlightTransform(): string {
     if (this.highlight) {
@@ -27,26 +28,18 @@ export class BoardComponent implements OnInit {
     }
   }
 
-  constructor(
-    private log: LoggerService,
-    public boardService: BoardService,
-    private route: ActivatedRoute,
-  ) {}
+  constructor(private log: LoggerService, public boardService: BoardService) {}
 
   ngOnInit() {
-    this.route.paramMap.subscribe(paramMap => {
-      const id: string = paramMap.get('id');
-      this.log.add(`Current board identifier is: ${id}`);
-      this.onRouteChange(id);
-    });
+    this.boardId.subscribe(boardId => this.onRouteChange(boardId));
   }
 
-  onRouteChange(boardId: string) {
+  private onRouteChange(boardId: string) {
+    this.currentBoardId = boardId;
+
     if (this.subscription) {
       this.subscription.unsubscribe();
     }
-
-    this.boardId = boardId;
 
     this.subscription = this.boardService
       .getBoard(boardId)
@@ -89,7 +82,7 @@ export class BoardComponent implements OnInit {
     );
     this.board.move(this.highlight.position, target.position);
 
-    this.boardService.setBoardFromUi(this.boardId, this.board.dto);
+    this.boardService.setBoardFromUi(this.currentBoardId, this.board.dto);
 
     if (target.type === PacoMoveType.chain) {
       if (this.board.chainingPiece === null) {
