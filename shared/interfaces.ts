@@ -8,6 +8,12 @@ export interface IPosition {
   readonly y: number;
 }
 
+export interface IMove {
+  readonly start: IPosition;
+  readonly target: IPosition;
+  readonly type: PacoMoveType;
+}
+
 /**
  * The PieceType enum lists all possible kinds of chess pieces.
  * Pawn, Rock, Knight, Bishop, Queen, King

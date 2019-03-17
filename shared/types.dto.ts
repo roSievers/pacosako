@@ -1,6 +1,7 @@
 // This file defines data transfer objects for types defined in types.ts
 
 import { IPosition, PieceType, PlayerColor } from './interfaces';
+import { Move } from './types';
 
 export class PositionDto implements IPosition {
   constructor(public x: number, public y: number) {}
@@ -19,5 +20,6 @@ export class BoardDto {
     public pieces: PieceDto[],
     public currentPlayer: PlayerColor,
     public chaining: number | null,
+    public history: Move[],
   ) {}
 }

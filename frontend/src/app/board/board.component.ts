@@ -1,5 +1,5 @@
 import { Component, OnInit, Input } from '@angular/core';
-import { ChessPiece, PacoBoard, MoveTarget } from '../../../../shared/types';
+import { ChessPiece, PacoBoard, Move } from '../../../../shared/types';
 import { LoggerService } from '../logger.service';
 import { BoardService } from '../board.service';
 import { PacoMoveType } from '../../../../shared/interfaces';
@@ -11,27 +11,33 @@ import { Subscription, Observable } from 'rxjs';
   styleUrls: ['./board.component.css'],
 })
 export class BoardComponent implements OnInit {
-  board: PacoBoard;
+  board: PacoBoard | null = null;
 
   highlight: ChessPiece | null = null;
-  legalMoves: MoveTarget[] = new Array();
+  legalMoves: Move[] | null = new Array();
   dragging: boolean = false;
-  private subscription: Subscription;
+  private subscription: Subscription | null = null;
 
-  @Input() boardId: Observable<string>;
-  currentBoardId: string;
+  @Input() boardId: Observable<string> | undefined;
+  currentBoardId: string | null = null;
 
   get highlightTransform(): string {
     if (this.highlight) {
       return `translate(${100 * this.highlight.position.x}px, ${100 *
         (7 - this.highlight.position.y)}px)`;
+    } else {
+      return '';
     }
   }
 
   constructor(private log: LoggerService, public boardService: BoardService) {}
 
   ngOnInit() {
-    this.boardId.subscribe(boardId => this.onRouteChange(boardId));
+    if (this.boardId) {
+      this.boardId.subscribe(boardId => this.onRouteChange(boardId));
+    } else {
+      this.log.add('Error: Using a BoardComponent without boardId.');
+    }
   }
 
   private onRouteChange(boardId: string) {
@@ -68,23 +74,23 @@ export class BoardComponent implements OnInit {
     this.dragging = true;
   }
 
-  onPieceDrop(target: MoveTarget) {
+  onPieceDrop(move: Move) {
     this.log.add(
-      `onPieceDrop(MoveTarget at ${JSON.stringify(target.position.dto)})`,
+      `onPieceDrop(MoveTarget at ${JSON.stringify(move.target.dto)})`,
     );
     this.dragging = false; // TODO: Reconsider when glueing piece to mouse
-    this.onMoveTargetClick(target);
+    this.onMoveTargetClick(move);
   }
 
-  onMoveTargetClick(target: MoveTarget) {
+  onMoveTargetClick(move: Move) {
     this.log.add(
-      `onMoveTargetClick(MoveTarget at ${JSON.stringify(target.position.dto)})`,
+      `onMoveTargetClick(MoveTarget at ${JSON.stringify(move.target.dto)})`,
     );
-    this.board.move(this.highlight.position, target.position);
+    this.board.move(move);
 
     this.boardService.setBoardFromUi(this.currentBoardId, this.board.dto);
 
-    if (target.type === PacoMoveType.chain) {
+    if (move.type === PacoMoveType.chain) {
       if (this.board.chainingPiece === null) {
         throw new Error('Chaining piece is "null" after chaining.');
       }

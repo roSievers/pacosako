@@ -11,8 +11,8 @@
     [ngStyle]="{ transform: highlightTransform }"
   ></div>
   <app-move-target
-    *ngFor="let target of legalMoves"
-    [target]="target"
+    *ngFor="let move of legalMoves"
+    [move]="move"
     [handler]="this"
   ></app-move-target>
 </div>

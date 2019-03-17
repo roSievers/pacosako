@@ -1,5 +1,5 @@
 import { Component, OnInit, Input } from '@angular/core';
-import { MoveTarget } from '../../../../shared/types';
+import { Move } from '../../../../shared/types';
 import { BoardComponent } from '../board/board.component';
 import { PacoMoveType } from '../../../../shared/interfaces';
 
@@ -9,7 +9,7 @@ import { PacoMoveType } from '../../../../shared/interfaces';
   styleUrls: ['./move-target.component.css'],
 })
 export class MoveTargetComponent implements OnInit {
-  @Input() target: MoveTarget;
+  @Input() move: Move;
   @Input() handler?: BoardComponent;
 
   constructor() {}
@@ -17,8 +17,8 @@ export class MoveTargetComponent implements OnInit {
   ngOnInit() {}
 
   get transform(): string {
-    return `translate(${100 * this.target.position.x}px, ${100 *
-      (7 - this.target.position.y)}px)`;
+    return `translate(${100 * this.move.target.x}px, ${100 *
+      (7 - this.move.target.y)}px)`;
   }
 
   get cssClasses(): string {
@@ -26,7 +26,7 @@ export class MoveTargetComponent implements OnInit {
   }
 
   get moveTypeClass(): string {
-    switch (this.target.type) {
+    switch (this.move.type) {
       case PacoMoveType.chain:
         return 'chain';
       case PacoMoveType.union:
@@ -38,19 +38,19 @@ export class MoveTargetComponent implements OnInit {
 
   onClick(clickEvent: any) {
     clickEvent.stopPropagation();
-    if (this.handler !== null) {
-      this.handler.onMoveTargetClick(this.target);
+    if (this.handler !== undefined) {
+      this.handler.onMoveTargetClick(this.move);
     }
   }
 
-  allowDrop(event) {
+  allowDrop(event: any) {
     event.preventDefault();
   }
 
-  drop(event) {
+  drop(event: any) {
     event.preventDefault();
-    if (this.handler !== null) {
-      this.handler.onPieceDrop(this.target);
+    if (this.handler !== undefined) {
+      this.handler.onPieceDrop(this.move);
     }
   }
 }
