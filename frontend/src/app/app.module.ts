@@ -9,6 +9,7 @@ import { PieceComponent } from './piece/piece.component';
 import { MoveTargetComponent } from './move-target/move-target.component';
 import { HomeComponent } from './home/home.component';
 import { GameViewComponent } from './game-view/game-view.component';
+import { GameInfoComponent } from './game-info/game-info.component';
 
 @NgModule({
   declarations: [
@@ -19,6 +20,7 @@ import { GameViewComponent } from './game-view/game-view.component';
     MoveTargetComponent,
     HomeComponent,
     GameViewComponent,
+    GameInfoComponent,
   ],
   imports: [BrowserModule, AppRoutingModule],
   providers: [],
