@@ -12,7 +12,6 @@ export class BoardService {
   // We store a dto instead of a proper board to make sure that the object
   // isn't mutated accidentally.
   private boards: Map<string, Subject<BoardDto>> = new Map();
-  private port = '3000';
   private socket: SocketIOClient.Socket;
 
   constructor(public log: LoggerService) {
@@ -58,9 +57,13 @@ export class BoardService {
     this.socket.emit('add-message', message);
   }
 
+  /**
+   * The websocket is hosted at the root of the domain using the same port.
+   * The port varies between environments and must be read from window.location.
+   */
   get url(): string {
     return `${window.location.protocol}//${window.location.hostname}:${
-      this.port
+      window.location.port
     }`;
   }
 
