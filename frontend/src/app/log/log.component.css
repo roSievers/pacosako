@@ -1,0 +1,11 @@
+.info {
+  color: darkblue;
+}
+
+.warning {
+  color: orange;
+}
+
+.error {
+  color: orangered;
+}

@@ -1,13 +1,49 @@
-import { Injectable } from "@angular/core";
+import { Injectable } from '@angular/core';
+
+export enum LoggingLevel {
+  Info,
+  Warning,
+  Error,
+}
+
+export class LoggingEntry {
+  content: string;
+  source?: string;
+  level: LoggingLevel;
+}
 
 @Injectable({
-  providedIn: "root"
+  providedIn: 'root',
 })
 export class LoggerService {
-  messages: string[] = [];
+  messages: LoggingEntry[] = [];
 
   add(message: string) {
-    this.messages.push(message);
+    this.info(message);
+  }
+
+  info(content: string, source?: string) {
+    this.messages.push({
+      content,
+      source,
+      level: LoggingLevel.Info,
+    });
+  }
+
+  warn(content: string, source?: string) {
+    this.messages.push({
+      content,
+      source,
+      level: LoggingLevel.Warning,
+    });
+  }
+
+  error(content: string, source?: string) {
+    this.messages.push({
+      content,
+      source,
+      level: LoggingLevel.Error,
+    });
   }
 
   clear() {

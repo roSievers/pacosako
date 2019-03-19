@@ -1,5 +1,18 @@
 <div *ngIf="loggingService.messages.length">
   <h2>Logging output:</h2>
-  <button class="clear" (click)="loggingService.clear()">clear</button>
-  <div *ngFor="let message of loggingService.messages">{{ message }}</div>
+  <p>
+    {{ messageCounterText }}
+    <button (click)="toggleVisibility()">
+      {{ toggleVisibilityText }}
+    </button>
+    <button class="clear" (click)="loggingService.clear()">clear</button>
+  </p>
+  <div *ngIf="visible">
+    <div *ngFor="let message of loggingService.messages">
+      <span [class]="messageLevelClass(message)">
+        {{ messageSourceText(message) }}
+      </span>
+      {{ message.content }}
+    </div>
+  </div>
 </div>
